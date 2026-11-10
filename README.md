@@ -182,6 +182,6 @@ runner. That runner keeps 8 KiB of output and has no standard input, and the
 plugin needs both to compare history and to build a bundle.
 
 `vendor/plugin-sdk` is a snapshot of the host's SDK. `vendor/plugin-sdk/NOTICE`
-names the commit it was taken from.
+says where it was taken from and gives its checksum.
 
 See [RELEASING](.repo-policy/RELEASING.md) for how a version is tagged.

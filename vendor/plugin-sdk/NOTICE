@@ -1,4 +1,8 @@
 T3 Code plugin SDK, MIT license, Copyright (c) 2026 T3 Tools Inc.
-Source: https://github.com/djgilcrease/t3code/tree/4e73f80e674ec6f57db9ac136e7cb71240ce7377/packages/plugin-sdk
+Source: packages/plugin-sdk in djgilcrease/t3code at commit
+4e73f80e674ec6f57db9ac136e7cb71240ce7377 (branch t3/thread-rehome-plugin). The same
+four host commits are on t3/create-plugin-system, whose SDK adds one unrelated
+type. Neither was on GitHub when this snapshot was taken, so it is identified
+by content rather than by link.
 Snapshot SHA256 (src/index.ts): 8bf2ff417df489c79610ee869977c168535949a2f89eeb5d453d60e1a590b6fb
 The original license is preserved in LICENSE in this directory.
