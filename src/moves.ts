@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { appendFile, mkdir, open, readFile, rm, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, open, rm } from "node:fs/promises";
 import { join } from "node:path";
 import type {
   PluginThreadExport,
@@ -114,53 +114,6 @@ const megabytes = (bytes: number) => Math.max(1, Math.ceil(bytes / (1024 * 1024)
 const TRANSFER_TTL_MS = 30 * 60_000;
 const isSafeRef = (ref: string) => /^refs\/[A-Za-z0-9._/-]+$/.test(ref) && !ref.includes("..");
 
-interface JournalEntry {
-  readonly at: string;
-  readonly direction: "out" | "in";
-  readonly title: string;
-  readonly peer: string;
-  readonly outcome: string;
-}
-const JOURNAL_LIMIT = 30;
-
-/** A short record for the settings page. Titles and machine names only. */
-export class Journal {
-  readonly #file: string;
-  constructor(dataDirectory: string) {
-    this.#file = join(dataDirectory, "moves.jsonl");
-  }
-  async record(entry: Omit<JournalEntry, "at">): Promise<void> {
-    await appendFile(this.#file, `${JSON.stringify({ ...entry, at: new Date().toISOString() })}\n`)
-      .then(async () => {
-        const entries = await this.read();
-        if (entries.length > JOURNAL_LIMIT * 2)
-          await writeFile(
-            this.#file,
-            entries
-              .slice(0, JOURNAL_LIMIT)
-              .reverse()
-              .map((item) => `${JSON.stringify(item)}\n`)
-              .join(""),
-          );
-      })
-      .catch(() => undefined);
-  }
-  /** Newest first. */
-  async read(): Promise<JournalEntry[]> {
-    const text = await readFile(this.#file, "utf8").catch(() => "");
-    return text
-      .split("\n")
-      .flatMap((line) => {
-        try {
-          return line === "" ? [] : [JSON.parse(line) as JournalEntry];
-        } catch {
-          return [];
-        }
-      })
-      .reverse();
-  }
-}
-
 abstract class Transfers<State extends { readonly createdAt: number; readonly directory: string }> {
   protected readonly transfers = new Map<string, State>();
   protected readonly root: string;
@@ -209,11 +162,9 @@ interface Outgoing {
 /** The environment a thread leaves. It changes nothing durable until `finish`. */
 export class Source extends Transfers<Outgoing> {
   readonly #host: ThreadHost;
-  readonly #journal: Journal;
-  constructor(host: ThreadHost, dataDirectory: string, journal: Journal) {
+  constructor(host: ThreadHost, dataDirectory: string) {
     super(dataDirectory, "out");
     this.#host = host;
-    this.#journal = journal;
   }
   protected running(state: Outgoing): boolean {
     return state.prepared !== undefined && !state.settled;
@@ -343,12 +294,6 @@ export class Source extends Transfers<Outgoing> {
       throw fromHost(error);
     });
     await this.drop(id);
-    await this.#journal.record({
-      direction: "out",
-      title: offer.title,
-      peer: movedTo.environmentLabel,
-      outcome: "Moved",
-    });
   }
 
   async abort(id: string): Promise<void> {
@@ -372,11 +317,9 @@ interface Incoming {
 /** The environment a thread arrives on. A failure leaves no thread, branch or ref behind. */
 export class Destination extends Transfers<Incoming> {
   readonly #host: ThreadHost;
-  readonly #journal: Journal;
-  constructor(host: ThreadHost, dataDirectory: string, journal: Journal) {
+  constructor(host: ThreadHost, dataDirectory: string) {
     super(dataDirectory, "in");
     this.#host = host;
-    this.#journal = journal;
   }
   protected running(state: Incoming): boolean {
     return state.importing !== undefined && !state.settled;
@@ -481,12 +424,6 @@ export class Destination extends Transfers<Incoming> {
         warnings.push(
           `${manifest.omittedMessages} older messages were not copied. The archived original keeps them.`,
         );
-      await this.#journal.record({
-        direction: "in",
-        title: offer.title,
-        peer: offer.source.environmentLabel,
-        outcome: "Moved",
-      });
       return {
         thread: {
           environmentId: imported.environmentId,

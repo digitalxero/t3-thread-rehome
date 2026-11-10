@@ -1,5 +1,5 @@
-import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
-import { appendFile, mkdir, open, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
+import { appendFile, mkdir, open, rm, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
 import { createReadStream, createWriteStream } from "node:fs";
@@ -1449,14 +1449,6 @@ const isEqual = (u) => hasProperty(u, "~effect/Equal") && typeof u["~effect/Equa
 */
 /** @internal */
 const isArrayNonEmpty$1 = (self) => self.length > 0;
-// node_modules/.pnpm/effect@4.1.2/node_modules/effect/dist/internal/count.js
-/**
-* Normalizes a collection count to a non-negative integer. `NaN` and
-* non-positive values become `0`; positive infinity is preserved.
-*
-* @internal
-*/
-const normalize$1 = (n) => n > 0 ? Math.floor(n) : 0;
 // node_modules/.pnpm/effect@4.1.2/node_modules/effect/dist/internal/record.js
 /** @internal */
 function assignProperty(self, key, value) {
@@ -2183,8 +2175,6 @@ const EffectProto = {
 	}
 };
 /** @internal */
-const isEffect = (u) => hasProperty(u, EffectTypeId);
-/** @internal */
 const isExit = (u) => hasProperty(u, ExitTypeId);
 /** @internal */
 const CauseTypeId = "~effect/Cause";
@@ -2454,7 +2444,7 @@ const exitFail = (e) => exitFailCause(causeFail(e));
 /** @internal */
 const exitDie = (defect) => exitFailCause(causeDie(defect));
 /** @internal */
-const withFiber$1 = /*#__PURE__*/ makePrimitive({
+const withFiber = /*#__PURE__*/ makePrimitive({
 	op: "WithFiber",
 	[evaluate](fiber) {
 		return this[args](fiber);
@@ -2507,33 +2497,13 @@ const TaggedError$2 = (tag) => {
 const DoneTypeId = "~effect/Cause/Done";
 /** @internal */
 const isDone = (u) => hasProperty(u, DoneTypeId);
-const DoneVoid = {
-	[DoneTypeId]: DoneTypeId,
-	_tag: "Done",
-	value: void 0
-};
-/** @internal */
-const Done = (value) => {
-	if (value === void 0) return DoneVoid;
-	return {
-		[DoneTypeId]: DoneTypeId,
-		_tag: "Done",
-		value
-	};
-};
-const doneVoid = /*#__PURE__*/ exitFail(DoneVoid);
-/** @internal */
-const done$2 = (value) => {
-	if (value === void 0) return doneVoid;
-	return exitFail(Done(value));
-};
 // node_modules/.pnpm/effect@4.1.2/node_modules/effect/dist/internal/option.js
 /**
 * @since 2.0.0
 */
-const TypeId$21 = "~effect/Option";
+const TypeId$16 = "~effect/Option";
 const CommonProto$1 = {
-	[TypeId$21]: { _A: (_) => _ },
+	[TypeId$16]: { _A: (_) => _ },
 	...PipeInspectableProto,
 	[Symbol.iterator]() {
 		return new SingleShotGen(this);
@@ -2583,7 +2553,7 @@ const NoneProto = /*#__PURE__*/ Object.assign(/*#__PURE__*/ Object.create(Common
 	}
 });
 /** @internal */
-const isOption = (input) => hasProperty(input, TypeId$21);
+const isOption = (input) => hasProperty(input, TypeId$16);
 /** @internal */
 const isNone$1 = (fa) => fa._tag === "None";
 /** @internal */
@@ -2598,9 +2568,9 @@ SomeImpl.prototype = SomeProto;
 /** @internal */
 const some$1 = (value) => new SomeImpl(value);
 // node_modules/.pnpm/effect@4.1.2/node_modules/effect/dist/internal/result.js
-const TypeId$20 = "~effect/Result";
+const TypeId$15 = "~effect/Result";
 const CommonProto = {
-	[TypeId$20]: {
+	[TypeId$15]: {
 		/* v8 ignore next 2 */
 		_A: (_) => _,
 		_E: (_) => _
@@ -2651,7 +2621,7 @@ const FailureProto = /*#__PURE__*/ Object.assign(/*#__PURE__*/ Object.create(Com
 	}
 });
 /** @internal */
-const isResult = (input) => hasProperty(input, TypeId$20);
+const isResult = (input) => hasProperty(input, TypeId$15);
 /** @internal */
 const isFailure$1 = (result) => result._tag === "Failure";
 /** @internal */
@@ -2720,7 +2690,7 @@ const succeed$5 = (success) => new SuccessImpl(success);
 * @category constructors
 * @since 2.0.0
 */
-function make$13(compare) {
+function make$10(compare) {
 	return (self, that) => self === that ? 0 : compare(self, that);
 }
 /**
@@ -2751,7 +2721,7 @@ function make$13(compare) {
 * @category instances
 * @since 4.0.0
 */
-const String$4 = /*#__PURE__*/ make$13((self, that) => self < that ? -1 : 1);
+const String$4 = /*#__PURE__*/ make$10((self, that) => self < that ? -1 : 1);
 /**
 * Order instance for numbers that compares them numerically.
 *
@@ -2784,7 +2754,7 @@ const String$4 = /*#__PURE__*/ make$13((self, that) => self < that ? -1 : 1);
 * @category instances
 * @since 4.0.0
 */
-const Number$4 = /*#__PURE__*/ make$13((self, that) => {
+const Number$4 = /*#__PURE__*/ make$10((self, that) => {
 	if (globalThis.Number.isNaN(self) && globalThis.Number.isNaN(that)) return 0;
 	if (globalThis.Number.isNaN(self)) return -1;
 	if (globalThis.Number.isNaN(that)) return 1;
@@ -2976,33 +2946,6 @@ const none = () => none$1;
 * @since 2.0.0
 */
 const some = some$1;
-/**
-* Checks whether an `Option` contains a value (`Some`).
-*
-* **When to use**
-*
-* Use when you need to branch on a present `Option` before accessing `.value`.
-*
-* **Details**
-*
-* - Acts as a type guard, narrowing to `Some<A>`
-*
-* **Example** (Checking for Some)
-*
-* ```ts import.meta.vitest
-* import { Option } from "effect"
-*
-* Option.isSome(Option.some(1)) // => true
-* Option.isSome(Option.none()) // => false
-* ```
-*
-* @see {@link isNone} for the opposite check.
-*
-* @stability stable
-* @category guards
-* @since 2.0.0
-*/
-const isSome = isSome$1;
 // node_modules/.pnpm/effect@4.1.2/node_modules/effect/dist/Result.js
 /**
 * Creates a `Result` holding a `Success` value.
@@ -3110,35 +3053,6 @@ const isFailure = isFailure$1;
 */
 const Array$1 = globalThis.Array;
 /**
-* Converts an `Iterable` to an `Array`.
-*
-* **When to use**
-*
-* Use to convert any `Iterable` (Set, Generator, etc.) into an array.
-*
-* **Details**
-*
-* If the input is already an array, this returns it by reference without
-* copying. Otherwise, it creates a new array from the iterable. Use `copy` if
-* you need a fresh array even when the input is already an array.
-*
-* **Example** (Converting a Set to an array)
-*
-* ```ts import.meta.vitest
-* import { Array } from "effect"
-*
-* Array.fromIterable(new Set([1, 2, 3])) // => [1, 2, 3]
-* ```
-*
-* @see {@link ensure} — wrap a single value or return an existing array
-* @see {@link copy} — create a shallow copy of an array
-*
-* @stability stable
-* @category constructors
-* @since 2.0.0
-*/
-const fromIterable$1 = (collection) => Array$1.isArray(collection) ? collection : Array$1.from(collection);
-/**
 * Adds a single element to the end of an iterable, returning a `NonEmptyArray`.
 *
 * **When to use**
@@ -3161,7 +3075,7 @@ const fromIterable$1 = (collection) => Array$1.isArray(collection) ? collection 
 * @category combining
 * @since 2.0.0
 */
-const append$1 = /*#__PURE__*/ dual(2, (self, last) => [...self, last]);
+const append = /*#__PURE__*/ dual(2, (self, last) => [...self, last]);
 Array$1.isArray;
 /**
 * Checks whether a mutable `Array` is non-empty, narrowing the type to
@@ -3264,7 +3178,7 @@ const empty$1 = () => [];
 * @category mapping
 * @since 2.0.0
 */
-const map$3 = /*#__PURE__*/ dual(2, (self, f) => self.map(f));
+const map$2 = /*#__PURE__*/ dual(2, (self, f) => self.map(f));
 // node_modules/.pnpm/effect@4.1.2/node_modules/effect/dist/BigDecimal.js
 /**
 * Decimal numbers and arithmetic for cases where JavaScript `number` rounding
@@ -3279,9 +3193,9 @@ const map$3 = /*#__PURE__*/ dual(2, (self, f) => self.map(f));
 * @stability stable
 * @since 2.0.0
 */
-const TypeId$19 = "~effect/BigDecimal";
+const TypeId$14 = "~effect/BigDecimal";
 const BigDecimalProto = {
-	[TypeId$19]: TypeId$19,
+	[TypeId$14]: TypeId$14,
 	[symbol$1]() {
 		const normalized = normalize(this);
 		return combine(string$1(String(normalized.value)), number$1(normalized.scale));
@@ -3329,7 +3243,7 @@ const BigDecimalProto = {
 * @category guards
 * @since 2.0.0
 */
-const isBigDecimal = (u) => hasProperty(u, TypeId$19);
+const isBigDecimal = (u) => hasProperty(u, TypeId$14);
 /**
 * Creates a `BigDecimal` from a `bigint` value and a safe integer scale.
 *
@@ -3362,7 +3276,7 @@ const isBigDecimal = (u) => hasProperty(u, TypeId$19);
 * @category constructors
 * @since 2.0.0
 */
-const make$12 = (value, scale) => {
+const make$9 = (value, scale) => {
 	if (!Number.isSafeInteger(scale)) throw new RangeError(`Scale must be a safe integer, got ${scale}`);
 	const o = Object.create(BigDecimalProto);
 	o.value = value;
@@ -3370,7 +3284,7 @@ const make$12 = (value, scale) => {
 	return o;
 };
 const makeNormalized = (value, scale) => {
-	const o = make$12(value, scale);
+	const o = make$9(value, scale);
 	o.normalized = o;
 	return o;
 };
@@ -3676,18 +3590,18 @@ const ServiceProto = {
 		return self;
 	},
 	context(self) {
-		return make$11(this, self);
+		return make$8(this, self);
 	},
 	use(f) {
-		return withFiber$1((fiber) => f(get(fiber.context, this)));
+		return withFiber((fiber) => f(get(fiber.context, this)));
 	},
 	useSync(f) {
-		return withFiber$1((fiber) => exitSucceed(f(get(fiber.context, this))));
+		return withFiber((fiber) => exitSucceed(f(get(fiber.context, this))));
 	}
 };
 const cacheKeys = /*#__PURE__*/ new Set();
 const ReferenceTypeId = "~effect/Context/Reference";
-const TypeId$18 = "~effect/Context";
+const TypeId$13 = "~effect/Context";
 const FlattenAfterBaseHits = 8;
 const makeImpl = (cacheRoot, base, overlay, depth, maxDepth) => {
 	const self = Object.create(Proto$5);
@@ -3711,11 +3625,6 @@ const flatten = (self) => {
 	const map = new Map(self.base);
 	applyOverlays(map, self.overlay);
 	return self._flat = map;
-};
-const withFlat = (self, f) => {
-	const map = new Map(self.mapUnsafe);
-	f(map);
-	return makeImpl(void 0, map, void 0, 0, self.maxDepth);
 };
 const notFound = /*#__PURE__*/ Symbol();
 const lookup = (self, key) => {
@@ -3777,7 +3686,7 @@ const lookup = (self, key) => {
 * @category constructors
 * @since 4.0.0
 */
-const makeUnsafe$5 = (mapUnsafe, options) => {
+const makeUnsafe$2 = (mapUnsafe, options) => {
 	const maxDepth = options?.maxDepth;
 	return makeImpl(void 0, mapUnsafe, void 0, 0, Number.isInteger(maxDepth) && maxDepth >= 0 ? maxDepth : 8);
 };
@@ -3786,7 +3695,7 @@ const Proto$5 = {
 		return flatten(this);
 	},
 	...PipeInspectableProto,
-	[TypeId$18]: { _Services: (_) => _ },
+	[TypeId$13]: { _Services: (_) => _ },
 	toJSON() {
 		return {
 			_id: "Context",
@@ -3842,7 +3751,7 @@ const hasSameCache = (self, that) => self.cacheRoot === that.cacheRoot;
 * @category guards
 * @since 2.0.0
 */
-const isContext = (u) => hasProperty(u, TypeId$18);
+const isContext = (u) => hasProperty(u, TypeId$13);
 /**
 * Checks whether the provided argument is a `Reference`.
 *
@@ -3879,7 +3788,7 @@ const isReference = (u) => !!u[ReferenceTypeId];
 * @since 2.0.0
 */
 const empty = () => emptyContext;
-const emptyContext = /*#__PURE__*/ makeUnsafe$5(/*#__PURE__*/ new Map());
+const emptyContext = /*#__PURE__*/ makeUnsafe$2(/*#__PURE__*/ new Map());
 /**
 * Creates a new `Context` with a single service associated to the key.
 *
@@ -3899,7 +3808,7 @@ const emptyContext = /*#__PURE__*/ makeUnsafe$5(/*#__PURE__*/ new Map());
 * @category constructors
 * @since 2.0.0
 */
-const make$11 = (key, service) => makeUnsafe$5(/* @__PURE__ */ new Map([[key.key, service]]));
+const make$8 = (key, service) => makeUnsafe$2(/* @__PURE__ */ new Map([[key.key, service]]));
 /**
 * Adds a service to a given `Context`.
 *
@@ -4019,46 +3928,6 @@ const serviceNotFoundError = (service) => {
 	return error;
 };
 /**
-* Merges two `Context`s into one.
-*
-* **When to use**
-*
-* Use when you need to combine two contexts.
-*
-* **Details**
-*
-* When both contexts contain the same service key, the service from `that`
-* overrides the service from `self`.
-*
-* **Example** (Merging two contexts)
-*
-* ```ts import.meta.vitest
-* import { Context } from "effect"
-*
-* const Port = Context.Service<{ PORT: number }>("Port")
-* const Timeout = Context.Service<{ TIMEOUT: number }>("Timeout")
-*
-* const firstContext = Context.make(Port, { PORT: 8080 })
-* const secondContext = Context.make(Timeout, { TIMEOUT: 5000 })
-*
-* const context = Context.merge(firstContext, secondContext)
-*
-* const values = [Context.get(context, Port).PORT, Context.get(context, Timeout).TIMEOUT]
-* values // => [8080, 5000]
-* ```
-*
-* @see {@link mergeAll} for merging more than two contexts at once
-*
-* @stability stable
-* @category combining
-* @since 2.0.0
-*/
-const merge = /*#__PURE__*/ dual(2, (self, that) => {
-	if (self.mapUnsafe.size === 0) return that;
-	if (that.mapUnsafe.size === 0) return self;
-	return withFlat(self, (map) => that.mapUnsafe.forEach((value, key) => map.set(key, value)));
-});
-/**
 * Creates a context key with a default value.
 *
 * **When to use**
@@ -4107,7 +3976,7 @@ const merge = /*#__PURE__*/ dual(2, (self, that) => {
 */
 const Reference = Service;
 // node_modules/.pnpm/effect@4.1.2/node_modules/effect/dist/Duration.js
-const TypeId$17 = "~effect/Duration";
+const TypeId$12 = "~effect/Duration";
 const bigint0 = /*#__PURE__*/ BigInt(0);
 const bigint1 = /*#__PURE__*/ BigInt(1);
 const bigint2 = /*#__PURE__*/ BigInt(2);
@@ -4121,7 +3990,7 @@ const bigintNanosPerDay = /*#__PURE__*/ BigInt(864e11);
 const bigintNanosPerWeek = /*#__PURE__*/ BigInt(6048e11);
 const roundTiesAwayFromZero = (input) => BigInt(Math.sign(input) * Math.round(Math.abs(input)));
 const roundMillisToNanos = (millis) => Number.isInteger(millis) ? BigInt(millis) * bigint1e6 : roundTiesAwayFromZero(millis * 1e6);
-const fromNanosNumber = (nanos) => make$10(Number.isFinite(nanos) ? roundTiesAwayFromZero(nanos) : nanos);
+const fromNanosNumber = (nanos) => make$7(Number.isFinite(nanos) ? roundTiesAwayFromZero(nanos) : nanos);
 const parseNanos = (input, scale) => {
 	const decimalIndex = input.indexOf(".");
 	if (decimalIndex === -1) return BigInt(input) * scale;
@@ -4138,9 +4007,9 @@ const divideTiesAwayFromZero = (numerator, denominator) => {
 };
 const fromMillisString = (input, scale) => {
 	const millis = Number(input) * scale;
-	if (!Number.isFinite(millis)) return make$10(millis);
+	if (!Number.isFinite(millis)) return make$7(millis);
 	const nanos = parseNanos(input, BigInt(scale) * bigint1e6);
-	return make$10(Number.isInteger(millis) && BigInt(millis) * bigint1e6 === nanos ? millis : nanos);
+	return make$7(Number.isInteger(millis) && BigInt(millis) * bigint1e6 === nanos ? millis : nanos);
 };
 const DURATION_REGEXP = /^(-?\d+(?:\.\d+)?)\s+(nanos?|micros?|millis?|seconds?|minutes?|hours?|days?|weeks?)$/;
 /**
@@ -4200,14 +4069,14 @@ const fromInputUnsafe = (input) => {
 		}
 		case "object": {
 			if (input === null) break;
-			if (TypeId$17 in input) return input;
+			if (TypeId$12 in input) return input;
 			if (Array.isArray(input)) {
 				if (input.length !== 2 || !input.every(isNumber)) return invalid$1(input);
 				if (Number.isNaN(input[0]) || Number.isNaN(input[1])) return zero;
 				if (input[0] === -Infinity || input[1] === -Infinity) return negativeInfinity;
 				if (input[0] === Infinity || input[1] === Infinity) return infinity;
 				const nanos = input[0] * 1e9 + input[1];
-				return Number.isFinite(nanos) && Number.isInteger(input[0]) && Number.isInteger(input[1]) ? make$10(BigInt(input[0]) * bigint1e9 + BigInt(input[1])) : fromNanosNumber(nanos);
+				return Number.isFinite(nanos) && Number.isInteger(input[0]) && Number.isInteger(input[1]) ? make$7(BigInt(input[0]) * bigint1e9 + BigInt(input[1])) : fromNanosNumber(nanos);
 			}
 			const obj = input;
 			let millis = 0;
@@ -4218,13 +4087,13 @@ const fromInputUnsafe = (input) => {
 			if (obj.seconds) millis += obj.seconds * 1e3;
 			if (obj.milliseconds) millis += obj.milliseconds;
 			if (!obj.microseconds && !obj.nanoseconds) {
-				if (!Number.isFinite(millis)) return make$10(millis);
+				if (!Number.isFinite(millis)) return make$7(millis);
 				const exact = sumObjectNanos(obj);
-				return exact === void 0 || BigInt(millis) * bigint1e6 === exact ? make$10(millis) : make$10(exact);
+				return exact === void 0 || BigInt(millis) * bigint1e6 === exact ? make$7(millis) : make$7(exact);
 			}
 			const nanos = millis * 1e6 + (obj.microseconds ?? 0) * 1e3 + (obj.nanoseconds ?? 0);
 			const exact = Number.isFinite(nanos) ? sumObjectNanos(obj) : void 0;
-			return exact === void 0 ? fromNanosNumber(nanos) : make$10(exact);
+			return exact === void 0 ? fromNanosNumber(nanos) : make$7(exact);
 		}
 	}
 	return invalid$1(input);
@@ -4253,7 +4122,7 @@ const zeroDurationValue = {
 const infinityDurationValue = { _tag: "Infinity" };
 const negativeInfinityDurationValue = { _tag: "NegativeInfinity" };
 const DurationProto = {
-	[TypeId$17]: TypeId$17,
+	[TypeId$12]: TypeId$12,
 	[symbol$1]() {
 		switch (this.value._tag) {
 			case "Millis": return hash(roundMillisToNanos(this.value.millis));
@@ -4301,7 +4170,7 @@ const DurationProto = {
 		return pipeArguments(this, arguments);
 	}
 };
-const make$10 = (input) => {
+const make$7 = (input) => {
 	const duration = Object.create(DurationProto);
 	if (typeof input === "number") {
 		if (isNaN(input) || input === 0 || Object.is(input, -0)) duration.value = zeroDurationValue;
@@ -4337,7 +4206,7 @@ const make$10 = (input) => {
 * @category guards
 * @since 2.0.0
 */
-const isDuration = (u) => hasProperty(u, TypeId$17);
+const isDuration = (u) => hasProperty(u, TypeId$12);
 /**
 * A Duration representing zero time.
 *
@@ -4353,7 +4222,7 @@ const isDuration = (u) => hasProperty(u, TypeId$17);
 * @category constructors
 * @since 2.0.0
 */
-const zero = /*#__PURE__*/ make$10(0);
+const zero = /*#__PURE__*/ make$7(0);
 /**
 * A Duration representing infinite time.
 *
@@ -4369,7 +4238,7 @@ const zero = /*#__PURE__*/ make$10(0);
 * @category constructors
 * @since 2.0.0
 */
-const infinity = /*#__PURE__*/ make$10(Infinity);
+const infinity = /*#__PURE__*/ make$7(Infinity);
 /**
 * A Duration representing negative infinite time.
 *
@@ -4385,7 +4254,7 @@ const infinity = /*#__PURE__*/ make$10(Infinity);
 * @category constructors
 * @since 4.0.0
 */
-const negativeInfinity = /*#__PURE__*/ make$10(-Infinity);
+const negativeInfinity = /*#__PURE__*/ make$7(-Infinity);
 /**
 * Creates a Duration from nanoseconds.
 *
@@ -4401,7 +4270,7 @@ const negativeInfinity = /*#__PURE__*/ make$10(-Infinity);
 * @category constructors
 * @since 2.0.0
 */
-const nanos = (nanos) => make$10(nanos);
+const nanos = (nanos) => make$7(nanos);
 /**
 * Creates a Duration from milliseconds.
 *
@@ -4417,7 +4286,7 @@ const nanos = (nanos) => make$10(nanos);
 * @category constructors
 * @since 2.0.0
 */
-const millis = (millis) => make$10(millis);
+const millis = (millis) => make$7(millis);
 /**
 * Gets the duration in nanoseconds as a bigint.
 *
@@ -4917,17 +4786,6 @@ const findRecoverableError = (self) => hasDies(self) ? fail$4(causeElectDefects(
 /** @internal */
 const hasInterrupts = (self) => self.reasons.some(isInterruptReason);
 /** @internal */
-const causeFilterInterruptors = (self) => {
-	let interruptors;
-	for (let i = 0; i < self.reasons.length; i++) {
-		const f = self.reasons[i];
-		if (f._tag !== "Interrupt") continue;
-		interruptors ??= /* @__PURE__ */ new Set();
-		if (f.fiberId !== void 0) interruptors.add(f.fiberId);
-	}
-	return interruptors ? succeed$4(interruptors) : fail$4(self);
-};
-/** @internal */
 const causeMap = /*#__PURE__*/ dual(2, (self, f) => {
 	let hasFail = false;
 	const failures = self.reasons.map((failure) => {
@@ -5012,12 +4870,12 @@ var FiberImpl = class {
 	interruptUnsafe(fiberId, annotations) {
 		if (this._exit) return;
 		let cause = causeInterrupt(fiberId);
-		if (this.cache.stackFrame) cause = causeAnnotate(cause, make$11(StackTraceKey, this.cache.stackFrame));
+		if (this.cache.stackFrame) cause = causeAnnotate(cause, make$8(StackTraceKey, this.cache.stackFrame));
 		if (annotations) cause = causeAnnotate(cause, annotations);
 		this._interruptedCause = this._interruptedCause ? causeAddInterrupts(this._interruptedCause, cause) : cause;
 		if (this.interruptible) {
 			if (this._running) this._deferredInterrupt = true;
-			else this.evaluate(failCause$3(this._interruptedCause));
+			else this.evaluate(failCause$1(this._interruptedCause));
 		}
 	}
 	pollUnsafe() {
@@ -5078,7 +4936,7 @@ var FiberImpl = class {
 			while (true) try {
 				if (this._deferredInterrupt) {
 					this._deferredInterrupt = false;
-					current = failCause$3(this._interruptedCause);
+					current = failCause$1(this._interruptedCause);
 				}
 				this.currentOpCount++;
 				const cache = this.cache;
@@ -5176,10 +5034,10 @@ const makeFiberContextCache = (context) => {
 };
 const deferredInterruptCont = {
 	[contA](_value, fiber) {
-		return failCause$3(fiber._interruptedCause);
+		return failCause$1(fiber._interruptedCause);
 	},
 	[contE](_cause, fiber) {
-		return failCause$3(fiber._interruptedCause);
+		return failCause$1(fiber._interruptedCause);
 	}
 };
 const maxInlineSteps = 32;
@@ -5188,10 +5046,10 @@ const fiberStackAnnotations = (fiber) => {
 	if (!fiber.cache.stackFrame) return void 0;
 	const annotations = /* @__PURE__ */ new Map();
 	annotations.set(InterruptorStackTrace.key, fiber.cache.stackFrame);
-	return makeUnsafe$5(annotations);
+	return makeUnsafe$2(annotations);
 };
 /** @internal */
-const fiberAwaitAll = (self) => callback$1((resume) => {
+const fiberAwaitAll = (self) => callback((resume) => {
 	const iter = self[Symbol.iterator]();
 	const exits = [];
 	let cancel = void 0;
@@ -5212,26 +5070,26 @@ const fiberAwaitAll = (self) => callback$1((resume) => {
 		resume(succeed$3(exits));
 	}
 	loop();
-	return sync$1(() => cancel?.());
+	return sync(() => cancel?.());
 });
 /** @internal */
-const fiberInterruptAll = (fibers) => withFiber$1((parent) => {
+const fiberInterruptAll = (fibers) => withFiber((parent) => {
 	const annotations = fiberStackAnnotations(parent);
 	let fiberArr = empty$1();
 	for (const fiber of fibers) {
 		fiber.interruptUnsafe(parent.id, annotations);
 		fiberArr.push(fiber);
 	}
-	return asVoid$1(fiberAwaitAll(fiberArr));
+	return asVoid(fiberAwaitAll(fiberArr));
 });
 /** @internal */
 const succeed$3 = exitSucceed;
 /** @internal */
-const failCause$3 = exitFailCause;
+const failCause$1 = exitFailCause;
 /** @internal */
 const fail$3 = exitFail;
 /** @internal */
-const sync$1 = /*#__PURE__*/ makePrimitive({
+const sync = /*#__PURE__*/ makePrimitive({
 	op: "Sync",
 	[evaluate](fiber) {
 		const thunk = this[args];
@@ -5263,13 +5121,11 @@ const yieldNow = /*#__PURE__*/ (/* @__PURE__ */ makePrimitive({
 	}
 }))(0);
 /** @internal */
-const succeedNone = /*#__PURE__*/ succeed$3(/*#__PURE__*/ none());
-/** @internal */
-const failCauseSync$1 = (evaluate) => suspend$1(() => failCause$3(evaluate()));
+const failCauseSync$1 = (evaluate) => suspend$1(() => failCause$1(evaluate()));
 /** @internal */
 const die$2 = (defect) => exitDie(defect);
 /** @internal */
-const void_$2 = /*#__PURE__*/ succeed$3(void 0);
+const void_$1 = /*#__PURE__*/ succeed$3(void 0);
 /** @internal */
 const try_$1 = (options) => {
 	const evaluate = typeof options === "function" ? options : options.try;
@@ -5346,11 +5202,11 @@ const asyncFinalizer = /*#__PURE__*/ makePrimitive({
 		}
 	},
 	[contE](cause, _fiber) {
-		return hasInterrupts(cause) ? flatMap$1(combineFinalizerCause(exitFailCause(cause), this[args]()), () => failCause$3(cause)) : failCause$3(cause);
+		return hasInterrupts(cause) ? flatMap$1(combineFinalizerCause(exitFailCause(cause), this[args]()), () => failCause$1(cause)) : failCause$1(cause);
 	}
 });
 /** @internal */
-const callback$1 = (register) => callbackOptions(register, register.length >= 2);
+const callback = (register) => callbackOptions(register, register.length >= 2);
 /** @internal */
 const gen$1 = (...args) => {
 	if (args.length === 1) {
@@ -5361,18 +5217,6 @@ const gen$1 = (...args) => {
 	return suspend$1(() => fromIteratorUnsafe(body.call(options.self)));
 };
 const fnBody = (bodyOrOptions, pipeables) => typeof bodyOrOptions === "function" ? bodyOrOptions : pipeables.shift().bind(bodyOrOptions.self);
-/** @internal */
-const fnUntraced = (bodyOrOptions, ...pipeables) => {
-	const body = fnBody(bodyOrOptions, pipeables);
-	const fn = pipeables.length === 0 ? function() {
-		return suspend$1(() => fromIteratorUnsafe(body.apply(this, arguments)));
-	} : function() {
-		let effect = suspend$1(() => fromIteratorUnsafe(body.apply(this, arguments)));
-		for (let i = 0; i < pipeables.length; i++) effect = pipeables[i](effect, ...arguments);
-		return effect;
-	};
-	return defineFunctionLength(body.length, fn);
-};
 const defineFunctionLength = (length, fn) => Object.defineProperty(fn, "length", {
 	value: length,
 	configurable: true
@@ -5442,8 +5286,6 @@ const fromIteratorUnsafe = /*#__PURE__*/ function() {
 		return new IteratorImpl(iterator, initial);
 	};
 }();
-/** @internal */
-const as$1 = /*#__PURE__*/ dual(2, (self, value) => new ContImpl(self, returnPayload, succeed$3(value)));
 const evaluateCont = function(fiber) {
 	fiber._stack.push(this);
 	return this[args];
@@ -5460,9 +5302,6 @@ const ContImpl = function(self, cont, payload) {
 ContImpl.prototype = OnSuccessProto;
 const returnPayload = function() {
 	return this.payload;
-};
-const succeedPayload = function(_value, fiber) {
-	return fiber.succeedWith(this.payload);
 };
 const continuationMarksStack = /*#__PURE__*/ (() => {
 	const limit = /*#__PURE__*/ getStackTraceLimit();
@@ -5484,21 +5323,8 @@ const andThenCont = function(value) {
 	const f = this.payload;
 	return f(value);
 };
-const tapCont = function(value) {
-	const f = this.payload;
-	return new ContImpl(f(value), succeedPayload, value);
-};
-const tapEffectCont = function(value) {
-	return new ContImpl(this.payload, succeedPayload, value);
-};
 /** @internal */
-const asSome = (self) => map$2(self, some);
-/** @internal */
-const andThen$1 = /*#__PURE__*/ dual(2, (self, f) => new ContImpl(self, isEffect(f) ? returnPayload : andThenCont, f));
-/** @internal */
-const tap$1 = /*#__PURE__*/ dual(2, (self, f) => new ContImpl(self, isEffect(f) ? tapEffectCont : tapCont, f));
-/** @internal */
-const asVoid$1 = (self) => new ContImpl(self, returnPayload, exitVoid);
+const asVoid = (self) => new ContImpl(self, returnPayload, exitVoid);
 /** @internal */
 const flatMap$1 = /*#__PURE__*/ dual(2, (self, f) => new ContImpl(self, andThenCont, f));
 /** @internal */
@@ -5509,49 +5335,15 @@ const flatMapEager$1 = /*#__PURE__*/ dual(2, (self, f) => {
 	return flatMap$1(self, f);
 });
 /** @internal */
-const map$2 = /*#__PURE__*/ dual(2, (self, f) => new ContImpl(self, mapCont, f));
+const map$1 = /*#__PURE__*/ dual(2, (self, f) => new ContImpl(self, mapCont, f));
 /** @internal */
-const mapEager$1 = /*#__PURE__*/ dual(2, (self, f) => effectIsExit(self) ? exitMap(self, f) : map$2(self, f));
-/** @internal */
-const exitInterrupt = (fiberId) => exitFailCause(causeInterrupt(fiberId));
+const mapEager$1 = /*#__PURE__*/ dual(2, (self, f) => effectIsExit(self) ? exitMap(self, f) : map$1(self, f));
 /** @internal */
 const exitIsSuccess = (self) => self._tag === "Success";
 /** @internal */
 const exitVoid = /*#__PURE__*/ exitSucceed(void 0);
 /** @internal */
 const exitMap = /*#__PURE__*/ dual(2, (self, f) => self._tag === "Success" ? exitSucceed(f(self.value)) : self);
-/** @internal */
-const exitAsVoidAll = (exits) => {
-	const failures = [];
-	for (const exit of exits) if (exit._tag === "Failure") failures.push(...exit.cause.reasons);
-	return failures.length === 0 ? exitVoid : exitFailCause(causeFromReasons(failures));
-};
-/** @internal */
-const updateContext = /*#__PURE__*/ dual(2, (self, f) => withFiber$1((fiber) => {
-	const prevContext = fiber.context;
-	const nextContext = f(prevContext);
-	if (prevContext === nextContext) return self;
-	fiber.setContext(nextContext);
-	onExitUnsafe(fiber, () => {
-		fiber.setContext(prevContext);
-	});
-	return self;
-}));
-/** @internal */
-const contextWith$1 = (f) => withFiber$1((fiber) => f(fiber.context));
-/** @internal */
-const provideContext = /*#__PURE__*/ dual(2, (self, context) => {
-	if (effectIsExit(self)) return self;
-	return updateContext(self, merge(context));
-});
-/** @internal */
-const provideService = function() {
-	if (arguments.length === 1) return dual(2, (self, impl) => provideServiceImpl(self, arguments[0], impl));
-	return dual(3, (self, service, impl) => provideServiceImpl(self, service, impl)).apply(this, arguments);
-};
-const provideServiceImpl = (self, service, implementation) => updateContext(self, add(service, implementation));
-/** @internal */
-const when$1 = /*#__PURE__*/ dual(2, (self, condition) => flatMap$1(condition, (pass) => pass ? asSome(self) : succeedNone));
 /** @internal */
 const catchCause$1 = /*#__PURE__*/ dual(2, (self, f) => new OnFailureImpl(self, f.length !== 1 ? (cause) => f(cause) : f));
 const OnFailureProto = /*#__PURE__*/ makePrimitiveProto({
@@ -5598,7 +5390,7 @@ const makeMatch = (op, onFailure) => {
 };
 const MatchImpl = /*#__PURE__*/ makeMatch("Match", function(cause, fiber) {
 	const error = findRecoverableError(cause);
-	if (isFailure(error)) return failCause$3(error.failure);
+	if (isFailure(error)) return failCause$1(error.failure);
 	const handlers = this.payload;
 	return fiber.succeedWith(continuationMarksStack ? handlers.onFailure(error.success) : internalCall(() => handlers.onFailure(error.success)));
 });
@@ -5629,182 +5421,9 @@ const exitPrimitive = /*#__PURE__*/ makePrimitive({
 		return fiber.succeedWith(exit ?? exitFailCause(cause));
 	}
 });
+const combineFinalizerCause = (exit_, finalizer) => exitIsSuccess(exit_) ? finalizer : catchCause$1(finalizer, (cause) => failCause$1(causeElectDefects(causeCombine(exit_.cause, cause))));
 /** @internal */
-const ScopeTypeId = "~effect/Scope";
-/** @internal */
-const ScopeCloseableTypeId = "~effect/Scope/Closeable";
-/** @internal */
-const scopeTag = /*#__PURE__*/ Service("effect/Scope");
-/** @internal */
-const scopeClose = (self, exit_) => withFiber$1((fiber) => {
-	fiberEnterUninterruptibleUnsafe(fiber);
-	return scopeCloseUnsafe(self, exit_) ?? void_$2;
-});
-/** @internal */
-const scopeCloseUnsafe = (self, exit_) => {
-	const state = self.state;
-	if (state._tag === "Closed") return;
-	self.state = {
-		_tag: "Closed",
-		exit: exit_
-	};
-	if (self.parent !== void 0) scopeRemoveFinalizerUnsafe(self.parent, self);
-	if (state._tag === "Empty") return;
-	if (state.finalizer !== void 0) return runFinalizer(state.finalizer, exit_);
-	const finalizers = state.finalizers;
-	if (finalizers.size === 1) return runFinalizer(finalizers.values().next().value, exit_);
-	return scopeCloseFinalizers(self, finalizers, exit_);
-};
-const runFinalizer = (finalizer, exit_) => {
-	try {
-		return finalizer(exit_);
-	} catch (defect) {
-		return exitDie(defect);
-	}
-};
-const combineFinalizerCause = (exit_, finalizer) => exitIsSuccess(exit_) ? finalizer : catchCause$1(finalizer, (cause) => failCause$3(causeElectDefects(causeCombine(exit_.cause, cause))));
-const scopeCloseFinalizers = /*#__PURE__*/ fnUntraced(function* (self, finalizers, exit_) {
-	let exits = [];
-	const fibers = [];
-	const arr = Array.from(finalizers);
-	const parent = getCurrentFiber();
-	for (let i = arr.length - 1; i >= 0; i--) {
-		const [key, finalizer] = arr[i];
-		if (self.strategy === "sequential") exits.push(yield* exit$1(runFinalizer(finalizer, exit_)));
-		else if (key !== parent) fibers.push(forkUnsafe$1(parent, runFinalizer(finalizer, exit_), true, true, "inherit"));
-	}
-	if (fibers.length > 0) exits = yield* fiberAwaitAll(fibers);
-	return yield* exitAsVoidAll(exits);
-});
-/** @internal */
-const scopeForkUnsafe = (scope, finalizerStrategy) => {
-	const child = makeScope(finalizerStrategy, scope);
-	if (scope.state._tag === "Closed") {
-		child.state = scope.state;
-		return child;
-	}
-	scopeAddFinalizerUnsafe(scope, child, (exit) => scopeClose(child, exit));
-	return child;
-};
-/** @internal */
-const scopeAddFinalizerExit = (scope, finalizer) => {
-	return suspend$1(() => {
-		if (scope.state._tag === "Closed") return finalizer(scope.state.exit);
-		scopeAddFinalizerUnsafe(scope, {}, finalizer);
-		return void_$2;
-	});
-};
-/** @internal */
-const scopeAddFinalizer = (scope, finalizer) => scopeAddFinalizerExit(scope, constant(finalizer));
-/** @internal */
-const scopeAddFinalizerUnsafe = (scope, key, finalizer) => {
-	if (scope.state._tag === "Empty") scope.state = {
-		_tag: "Open",
-		finalizerKey: key,
-		finalizer,
-		finalizers: void 0
-	};
-	else if (scope.state._tag === "Open") {
-		const state = scope.state;
-		if (state.finalizer !== void 0) {
-			state.finalizers = /* @__PURE__ */ new Map([[state.finalizerKey, state.finalizer]]);
-			state.finalizerKey = void 0;
-			state.finalizer = void 0;
-			state.finalizers.set(key, finalizer);
-		} else state.finalizers.set(key, finalizer);
-	}
-};
-/** @internal */
-const scopeRemoveFinalizerUnsafe = (scope, key) => {
-	if (scope.state._tag !== "Open") return;
-	const state = scope.state;
-	if (state.finalizerKey === key) scope.state = constScopeEmpty;
-	else if (state.finalizers !== void 0) {
-		state.finalizers.delete(key);
-		if (state.finalizers.size === 0) scope.state = constScopeEmpty;
-	}
-};
-/** @internal */
-const scopeMakeUnsafe = (finalizerStrategy) => makeScope(finalizerStrategy, void 0);
-const makeScope = (finalizerStrategy = "sequential", parent) => ({
-	[ScopeCloseableTypeId]: ScopeCloseableTypeId,
-	[ScopeTypeId]: ScopeTypeId,
-	strategy: finalizerStrategy,
-	parent,
-	state: constScopeEmpty
-});
-const constScopeEmpty = { _tag: "Empty" };
-/** @internal */
-const scope = scopeTag;
-/** @internal */
-const provideScope = /*#__PURE__*/ provideService(scopeTag);
-/** @internal */
-const addFinalizer$2 = (finalizer) => flatMap$1(scope, (scope) => contextWith$1((context) => scopeAddFinalizerExit(scope, (exit) => provideContext(finalizer(exit), context))));
-const OnExitImpl = /*#__PURE__*/ function() {
-	const Proto = /*#__PURE__*/ makePrimitiveProto({
-		op: "OnExit",
-		[evaluate](fiber) {
-			fiber._stack.push(this);
-			return this.effect;
-		},
-		[contAll](fiber) {
-			if (fiber.interruptible && this.interruptible !== true) {
-				fiber._stack.push(setInterruptibleTrue);
-				fiber.interruptible = false;
-			}
-		},
-		[contA](value, _, exit) {
-			exit ??= exitSucceed(value);
-			let eff;
-			try {
-				eff = this.onExit(exit);
-			} catch (defect) {
-				eff = exitDie(defect);
-			}
-			return eff ? flatMap$1(eff, (_) => exit) : exit;
-		},
-		[contE](cause, _, exit) {
-			exit ??= exitFailCause(cause);
-			let eff;
-			try {
-				eff = this.onExit(exit);
-			} catch (defect) {
-				eff = exitDie(defect);
-			}
-			return eff ? flatMap$1(combineFinalizerCause(exit, eff), (_) => exit) : exit;
-		}
-	});
-	const OnExitImpl = function(effect, onExit, interruptible) {
-		this.effect = effect;
-		this.onExit = onExit;
-		this.interruptible = interruptible;
-	};
-	OnExitImpl.prototype = Proto;
-	return OnExitImpl;
-}();
-/** @internal */
-const onExitPrimitive = (effect, onExit, interruptible) => new OnExitImpl(effect, onExit, interruptible);
-/**
-* Pushes an exit finalizer for the current `withFiber` evaluation. Only call inside `withFiber`.
-* @internal
-*/
-const onExitUnsafe = (fiber, f) => {
-	fiber._stack.push(new OnExitImpl(void 0, f, void 0));
-};
-/** @internal */
-const onExit = /*#__PURE__*/ dual(2, onExitPrimitive);
-/** @internal */
-const onErrorFilter = /*#__PURE__*/ dual(3, (self, filter, f) => onExit(self, (exit) => {
-	if (exit._tag !== "Failure") return void_$2;
-	const result = filter(exit.cause);
-	return isFailure(result) ? void_$2 : f(result.success, exit.cause);
-}));
-/** @internal */
-const onInterrupt$1 = /*#__PURE__*/ dual(2, (self, finalizer) => onErrorFilter(causeFilterInterruptors, finalizer)(self));
-/** @internal */
-const interrupt$2 = /*#__PURE__*/ withFiber$1((fiber) => failCause$3(causeInterrupt(fiber.id)));
-/** @internal */
-const uninterruptible$1 = (self) => withFiber$1((fiber) => {
+const uninterruptible = (self) => withFiber((fiber) => {
 	if (!fiber.interruptible) return self;
 	fiber.interruptible = false;
 	fiber._stack.push(setInterruptibleTrue);
@@ -5814,75 +5433,16 @@ const setInterruptibleTrue = /*#__PURE__*/ (/* @__PURE__ */ makePrimitive({
 	op: "SetInterruptible",
 	[contAll](fiber) {
 		fiber.interruptible = this[args];
-		if (fiber._interruptedCause && fiber.interruptible) return () => failCause$3(fiber._interruptedCause);
+		if (fiber._interruptedCause && fiber.interruptible) return () => failCause$1(fiber._interruptedCause);
 	}
 }))(true);
-/**
-* Makes the current fiber uninterruptible for the returned effect without an
-* extra primitive. Call only within `withFiber`.
-*
-* @internal
-*/
-const fiberEnterUninterruptibleUnsafe = (fiber) => {
-	const impl = fiber;
-	if (!impl.interruptible) return;
-	impl.interruptible = false;
-	impl._stack.push(setInterruptibleTrue);
-};
-/** @internal */
-const whileLoop = /*#__PURE__*/ makePrimitive({
-	op: "While",
-	[contA](value, fiber) {
-		this[args].step(value);
-		if (this["~effect/Effect/args"].while()) {
-			fiber._stack.push(this);
-			return this[args].body();
-		}
-		return exitVoid;
-	},
-	[evaluate](fiber) {
-		if (this["~effect/Effect/args"].while()) {
-			fiber._stack.push(this);
-			return this[args].body();
-		}
-		return exitVoid;
-	}
-});
-/** @internal */
-const forEach$1 = /*#__PURE__*/ dual((args) => typeof args[1] === "function", (iterable, f, options) => suspend$1(() => {
-	const concurrency = resolveConcurrency(options?.concurrency);
-	if (concurrency === 1) return forEachSequential(iterable, f, options);
-	const items = fromIterable$1(iterable);
-	let length = items.length;
-	if (length === 0) return options?.discard ? void_$2 : succeed$3([]);
-	const out = options?.discard ? void 0 : new Array(length);
-	const eff = forEachConcurrent({
-		f,
-		out
-	}, items, { concurrency });
-	return eff ? as$1(eff, out) : succeed$3(out);
-}));
-const forEachSequential = (iterable, f, options) => suspend$1(() => {
-	const out = options?.discard ? void 0 : [];
-	const iterator = iterable[Symbol.iterator]();
-	let state = iterator.next();
-	let index = 0;
-	return as$1(whileLoop({
-		while: () => !state.done,
-		body: () => f(state.value, index++),
-		step: (b) => {
-			if (out) out.push(b);
-			state = iterator.next();
-		}
-	}), out);
-});
 /** @internal */
 const resolveConcurrency = (concurrency) => concurrency === "unbounded" ? Number.POSITIVE_INFINITY : Math.max(1, concurrency ?? 1);
 /** @internal */
 const iterateEager = () => (options) => {
 	const onItem = options.onItem;
 	const step = options.step;
-	const resumeSequential = (state, items, index, end, effect) => flatMap$1(exit$1(effect), (itemExit) => step(state, items[index], itemExit, index) ?? runSequential(state, items, index + 1, end) ?? void_$2);
+	const resumeSequential = (state, items, index, end, effect) => flatMap$1(exit$1(effect), (itemExit) => step(state, items[index], itemExit, index) ?? runSequential(state, items, index + 1, end) ?? void_$1);
 	const runSequential = (state, items, index = 0, end = items.length) => {
 		for (; index < end; index++) {
 			const item = items[index];
@@ -5911,7 +5471,7 @@ const iterateConcurrentImpl = (options) => {
 			const defect = exitDie(error);
 			terminal = defect;
 			done = true;
-			return fibers && fibers.size > 0 ? flatMap$1(uninterruptible$1(fiberInterruptAll(Array.from(fibers))), () => terminal ?? defect) : defect;
+			return fibers && fibers.size > 0 ? flatMap$1(uninterruptible(fiberInterruptAll(Array.from(fibers))), () => terminal ?? defect) : defect;
 		};
 		const go = () => {
 			let paused = false;
@@ -5921,7 +5481,7 @@ const iterateConcurrentImpl = (options) => {
 				if (effectIsExit(eff)) {
 					terminal = step(state, item, eff, index);
 					if (terminal) break;
-				} else if (!parentFiber) return callback$1((cb) => {
+				} else if (!parentFiber) return callback((cb) => {
 					parentFiber = getCurrentFiber();
 					fibers = /* @__PURE__ */ new Set();
 					effect = eff;
@@ -5935,12 +5495,12 @@ const iterateConcurrentImpl = (options) => {
 					if (result) return cb(result);
 					return suspend$1(() => {
 						terminal ??= exitVoid;
-						return flatMap$1(fibers ? fiberInterruptAll(fibers) : void_$2, () => terminal?._tag === "Failure" ? terminal : void_$2);
+						return flatMap$1(fibers ? fiberInterruptAll(fibers) : void_$1, () => terminal?._tag === "Failure" ? terminal : void_$1);
 					});
 				});
 				else {
 					effect = void 0;
-					const fiber = forkUnsafe$1(parentFiber, eff, true, true, "inherit");
+					const fiber = forkUnsafe(parentFiber, eff, true, true, "inherit");
 					if (fiber._exit) {
 						terminal = step(state, item, fiber._exit, index);
 						if (terminal) break;
@@ -5969,7 +5529,7 @@ const iterateConcurrentImpl = (options) => {
 							if (paused) {
 								const eff = go();
 								if (eff) resume(eff);
-							} else if (done && fibers.size === 0) resume(terminal ?? void_$2);
+							} else if (done && fibers.size === 0) resume(terminal ?? void_$1);
 						} catch (error) {
 							resume(failDefect(error));
 						}
@@ -5990,7 +5550,7 @@ const iterateConcurrentImpl = (options) => {
 				if (resume || terminal._tag === "Failure") return terminal;
 			} else if (resume) {
 				if (!fibers) return exitVoid;
-				else if (fibers.size === 0) resume(void_$2);
+				else if (fibers.size === 0) resume(void_$1);
 			}
 		};
 		return go();
@@ -5998,17 +5558,8 @@ const iterateConcurrentImpl = (options) => {
 };
 /** @internal */
 const iterateConcurrent = () => (options) => iterateConcurrentImpl(options);
-const forEachConcurrent = /*#__PURE__*/ iterateConcurrentImpl({
-	onItem(state, item, index) {
-		return state.f(item, index);
-	},
-	step(state, _, exit, index) {
-		if (exit._tag === "Failure") return exit;
-		else if (state.out) state.out[index] = exit.value;
-	}
-});
 /** @internal */
-const forkUnsafe$1 = (parent, effect, immediate = false, daemon = false, uninterruptible = false) => {
+const forkUnsafe = (parent, effect, immediate = false, daemon = false, uninterruptible = false) => {
 	const parentRuntime = parent;
 	const interruptible = uninterruptible === "inherit" ? parentRuntime.interruptible : !uninterruptible;
 	const child = new FiberImpl(parentRuntime.context, interruptible);
@@ -6072,73 +5623,6 @@ const runSyncExitWith = (context) => {
 };
 /** @internal */
 const runSyncExit$1 = /*#__PURE__*/ runSyncExitWith(/*#__PURE__*/ empty());
-const succeedTrue = /*#__PURE__*/ succeed$3(true);
-const succeedFalse = /*#__PURE__*/ succeed$3(false);
-var Latch = class {
-	waiters = [];
-	scheduled = void 0;
-	_isOpen;
-	constructor(isOpen) {
-		this._isOpen = isOpen;
-	}
-	scheduleUnsafe(fiber) {
-		if (this.waiters.length === 0) return succeedTrue;
-		if (this.scheduled === void 0) {
-			this.scheduled = this.waiters;
-			fiber.currentDispatcher.scheduleTask(this.flushScheduled, 0);
-		} else for (let i = 0; i < this.waiters.length; i++) this.scheduled.push(this.waiters[i]);
-		this.waiters = [];
-		return succeedTrue;
-	}
-	flushScheduled = () => {
-		if (this.scheduled === void 0) return;
-		const waiters = this.scheduled;
-		this.scheduled = void 0;
-		for (let i = 0; i < waiters.length; i++) waiters[i](exitVoid);
-	};
-	flushWaiters() {
-		const waiters = this.waiters;
-		this.waiters = [];
-		this.flushScheduled();
-		for (let i = 0; i < waiters.length; i++) waiters[i](exitVoid);
-	}
-	open = /*#__PURE__*/ withFiber$1((fiber) => {
-		if (this._isOpen) return succeedFalse;
-		this._isOpen = true;
-		return this.scheduleUnsafe(fiber);
-	});
-	release = /*#__PURE__*/ withFiber$1((fiber) => this._isOpen ? succeedFalse : this.scheduleUnsafe(fiber));
-	openUnsafe() {
-		if (this._isOpen) return false;
-		this._isOpen = true;
-		this.flushWaiters();
-		return true;
-	}
-	await = /*#__PURE__*/ callback$1((resume) => {
-		if (this._isOpen) return resume(void_$2);
-		this.waiters.push(resume);
-		return sync$1(() => {
-			let index = this.waiters.indexOf(resume);
-			if (index !== -1) this.waiters.splice(index, 1);
-			else if (this.scheduled !== void 0) {
-				index = this.scheduled.indexOf(resume);
-				if (index !== -1) this.scheduled.splice(index, 1);
-			}
-		});
-	});
-	closeUnsafe() {
-		if (!this._isOpen) return false;
-		this._isOpen = false;
-		return true;
-	}
-	close = /*#__PURE__*/ sync$1(() => this.closeUnsafe());
-	whenOpen = (self) => flatMap$1(this.await, () => self);
-	isOpen() {
-		return this._isOpen;
-	}
-};
-/** @internal */
-const makeLatchUnsafe = (open) => new Latch(open ?? false);
 /** @internal */
 const AsyncFiberErrorTypeId = "~effect/Cause/AsyncFiberError";
 /** @internal */
@@ -6260,32 +5744,7 @@ const die$1 = causeDie;
 * @category mapping
 * @since 2.0.0
 */
-const map$1 = causeMap;
-/**
-* Creates an Effect that fails with a `Done` error. Shorthand for
-* `Effect.fail(Cause.Done(value))`.
-*
-* **When to use**
-*
-* Use when you model stream or queue completion through the error channel.
-*
-* **Example** (Failing with Done)
-*
-* ```ts import.meta.vitest
-* import { Cause, Effect, Exit } from "effect"
-*
-* const program = Cause.done("finished")
-*
-* await Effect.runPromiseExit(program) // => Exit.fail(Cause.Done("finished"))
-* ```
-*
-* @see {@link Done} — create the signal value without an Effect
-*
-* @stability stable
-* @category constructors
-* @since 4.0.0
-*/
-const done$1 = done$2;
+const map = causeMap;
 // node_modules/.pnpm/effect@4.1.2/node_modules/effect/dist/Exit.js
 /**
 * Creates a successful Exit containing the given value.
@@ -6344,7 +5803,7 @@ const succeed$2 = exitSucceed;
 * @category constructors
 * @since 2.0.0
 */
-const failCause$2 = exitFailCause;
+const failCause = exitFailCause;
 /**
 * Creates a failed Exit from a typed error value.
 *
@@ -6375,34 +5834,7 @@ const failCause$2 = exitFailCause;
 * @since 2.0.0
 */
 const fail$2 = exitFail;
-/**
-* Creates a failed Exit representing fiber interruption.
-*
-* **When to use**
-*
-* Use to signal that a fiber was interrupted.
-*
-* **Details**
-*
-* Optionally pass a fiber ID to identify which fiber was interrupted. Returns
-* a `Failure<never>` with an `Interrupt` cause.
-*
-* **Example** (Creating an interruption Exit)
-*
-* ```ts import.meta.vitest
-* import { Exit } from "effect"
-*
-* Exit.interrupt(123) // => Exit.interrupt(123)
-* ```
-*
-* @see {@link hasInterrupts} to check whether an Exit contains interruptions
-*
-* @stability stable
-* @category constructors
-* @since 2.0.0
-*/
-const interrupt$1 = exitInterrupt;
-const void_$1 = exitVoid;
+const void_ = exitVoid;
 /**
 * Checks whether an Exit is a Success.
 *
@@ -6431,451 +5863,13 @@ const void_$1 = exitVoid;
 * @since 2.0.0
 */
 const isSuccess = exitIsSuccess;
-const DeferredProto = {
-	["~effect/Deferred"]: {
-		_A: identity,
-		_E: identity
-	},
-	pipe() {
-		return pipeArguments(this, arguments);
-	}
-};
-const DeferredImpl = function() {
-	this.resumes = void 0;
-	this.effect = void 0;
-};
-DeferredImpl.prototype = DeferredProto;
-/**
-* Creates an empty `Deferred` synchronously outside the `Effect` runtime.
-*
-* **When to use**
-*
-* Use to allocate a `Deferred` synchronously when direct allocation outside
-* `Effect` is required.
-*
-* **Example** (Creating a Deferred unsafely)
-*
-* ```ts import.meta.vitest
-* import { Deferred } from "effect"
-*
-* const deferred = Deferred.makeUnsafe<number>()
-* Deferred.isDoneUnsafe(deferred) // => false
-* ```
-*
-* @stability stable
-* @category unsafe
-* @since 4.0.0
-*/
-const makeUnsafe$4 = () => new DeferredImpl();
-/**
-* Completes the `Deferred` with the specified `Exit` value, which will be
-* propagated to all fibers waiting on the value of the `Deferred`.
-*
-* **When to use**
-*
-* Use to complete a `Deferred` from an already computed `Exit`.
-*
-* **Details**
-*
-* The returned effect succeeds with `true` when this call completed the
-* `Deferred`, or `false` if it was already completed.
-*
-* **Example** (Completing a Deferred with an Exit)
-*
-* ```ts import.meta.vitest
-* import { Deferred, Effect, Exit } from "effect"
-*
-* const program = Effect.gen(function*() {
-*   const deferred = yield* Deferred.make<number>()
-*   yield* Deferred.done(deferred, Exit.succeed(42))
-*   return yield* Effect.exit(Deferred.await(deferred))
-* })
-*
-* await Effect.runPromise(program) // => Exit.succeed(42)
-* ```
-*
-* @see {@link complete} for completing from an effect and memoizing its result
-* @see {@link completeWith} for storing an effect directly
-* @see {@link succeed} for completing with a success value
-* @see {@link failCause} for completing with a failure cause
-*
-* @stability stable
-* @category completion
-* @since 2.0.0
-*/
-const done = /* @__PURE__ */ dual(2, (self, effect) => sync$1(() => doneUnsafe(self, effect)));
-/**
-* Attempts to complete the `Deferred` with the specified `Cause`.
-*
-* **When to use**
-*
-* Use to complete a `Deferred` with a full failure cause.
-*
-* **Details**
-*
-* Fibers waiting on the `Deferred` observe that cause only if this call
-* completes it. The returned effect succeeds with `true` when this call
-* completed the `Deferred`, or `false` if it was already completed.
-*
-* **Example** (Failing a Deferred with a Cause)
-*
-* ```ts import.meta.vitest
-* import { Cause, Deferred, Effect, Exit } from "effect"
-*
-* const program = Effect.gen(function*() {
-*   const deferred = yield* Deferred.make<number, string>()
-*   const success = yield* Deferred.failCause(deferred, Cause.fail("Operation failed"))
-*   const exit = yield* Effect.exit(Deferred.await(deferred))
-*   return [success, exit]
-* })
-*
-* await Effect.runPromise(program) // => [true, Exit.failCause(Cause.fail("Operation failed"))]
-* ```
-*
-* @stability stable
-* @category completion
-* @since 2.0.0
-*/
-const failCause$1 = /*#__PURE__*/ dual(2, (self, cause) => done(self, exitFailCause(cause)));
-/**
-* Attempts to complete the `Deferred` with interruption by the specified
-* `FiberId`.
-*
-* **When to use**
-*
-* Use to complete a `Deferred` as interrupted by a specific fiber id.
-*
-* **Details**
-*
-* Fibers waiting on the `Deferred` are interrupted with that fiber id only if
-* this call completes it. The returned effect succeeds with `true` when this
-* call completed the `Deferred`, or `false` if it was already completed.
-*
-* **Example** (Interrupting a Deferred with a fiber id)
-*
-* ```ts import.meta.vitest
-* import { Deferred, Effect, Exit } from "effect"
-*
-* const program = Effect.gen(function*() {
-*   const deferred = yield* Deferred.make<number>()
-*   const success = yield* Deferred.interruptWith(deferred, 42)
-*   const exit = yield* Effect.exit(Deferred.await(deferred))
-*   return [success, exit]
-* })
-*
-* await Effect.runPromise(program) // => [true, Exit.interrupt(42)]
-* ```
-*
-* @stability stable
-* @category completion
-* @since 2.0.0
-*/
-const interruptWith = /*#__PURE__*/ dual(2, (self, fiberId) => failCause$1(self, causeInterrupt(fiberId)));
-/**
-* Attempts to complete the `Deferred` synchronously with the specified
-* completion effect.
-*
-* **When to use**
-*
-* Use to complete a `Deferred` synchronously in low-level code that already has
-* the completion effect.
-*
-* **Details**
-*
-* This mutates the `Deferred` directly and should be reserved for low-level
-* code; prefer the effectful completion APIs when possible. Returns `true` if
-* this call completed the `Deferred`, or `false` if it was already completed.
-*
-* **Example** (Completing a Deferred unsafely)
-*
-* ```ts import.meta.vitest
-* import { Deferred, Effect } from "effect"
-*
-* const deferred = Deferred.makeUnsafe<number>()
-* Deferred.doneUnsafe(deferred, Effect.succeed(42)) // => true
-* ```
-*
-* @stability stable
-* @category unsafe
-* @since 4.0.0
-*/
-const doneUnsafe = (self, effect) => {
-	if (self.effect) return false;
-	self.effect = effect;
-	if (self.resumes) {
-		const resumes = self.resumes;
-		self.resumes = void 0;
-		for (let i = 0; i < resumes.length; i++) resumes[i](effect);
-	}
-	return true;
-};
-// node_modules/.pnpm/effect@4.1.2/node_modules/effect/dist/Scope.js
-/**
-* Controls how long resources stay open.
-*
-* A scope is a lifetime boundary. Code can register cleanup effects on it, and
-* closing the scope runs those cleanups with the `Exit` value that ended the
-* work. Most application code uses higher-level APIs such as `Effect.scoped`
-* and `Layer`, while this module is useful when code needs to create, provide,
-* fork, close, or inspect scopes directly.
-*
-* @stability stable
-* @since 2.0.0
-*/
-/**
-* Service tag for the active resource lifetime.
-*
-* **When to use**
-*
-* Use to access the active lifetime when registering finalizers or sharing
-* resources with the surrounding scope.
-*
-* **Example** (Accessing the scope service)
-*
-* ```ts import.meta.vitest
-* import { Effect, Scope } from "effect"
-*
-* const cleanups: Array<string> = []
-* const program = Effect.gen(function*() {
-*   const scope = yield* Scope.Scope
-*   yield* Scope.addFinalizer(scope, Effect.sync(() => cleanups.push("Cleanup")))
-* })
-*
-* Effect.runSync(Effect.scoped(program))
-* cleanups // => ["Cleanup"]
-* ```
-*
-* @stability stable
-* @category services
-* @since 2.0.0
-*/
-const Scope = scopeTag;
-/**
-* Creates a new `Scope` synchronously without wrapping it in an `Effect`.
-* This is useful when you need a scope immediately but should be used with caution
-* as it doesn't provide the same safety guarantees as the `Effect`-wrapped version.
-*
-* **When to use**
-*
-* Use when a scope must be allocated synchronously and the caller will close it
-* manually.
-*
-* **Example** (Creating a scope synchronously)
-*
-* ```ts import.meta.vitest
-* import { Effect, Exit, Scope } from "effect"
-*
-* const scope = Scope.makeUnsafe("sequential")
-* const cleanups: Array<string> = []
-* const program = Effect.gen(function*() {
-*   yield* Scope.addFinalizer(scope, Effect.sync(() => cleanups.push("Cleanup")))
-*   yield* Scope.close(scope, Exit.void)
-* })
-*
-* Effect.runSync(program)
-* cleanups // => ["Cleanup"]
-* ```
-*
-* @stability stable
-* @category constructors
-* @since 4.0.0
-*/
-const makeUnsafe$3 = scopeMakeUnsafe;
-/**
-* Provides a concrete `Scope` to an effect.
-*
-* **When to use**
-*
-* Use to run an effect that requires `Scope` with a scope managed by the
-* caller.
-*
-* **Details**
-*
-* Providing the scope removes the `Scope` requirement from the effect context.
-*
-* **Example** (Providing a scope)
-*
-* ```ts import.meta.vitest
-* import { Effect, Exit, Scope } from "effect"
-*
-* const events: Array<string> = []
-* const program = Effect.gen(function*() {
-*   const scope = yield* Scope.Scope
-*   yield* Scope.addFinalizer(scope, Effect.sync(() => events.push("cleanup")))
-*   events.push("working")
-* })
-*
-* const withScope = Effect.gen(function*() {
-*   const scope = yield* Scope.make()
-*   yield* Scope.provide(scope)(program)
-*   yield* Scope.close(scope, Exit.void)
-* })
-*
-* Effect.runSync(withScope)
-* events // => ["working", "cleanup"]
-* ```
-*
-* @stability stable
-* @category combinators
-* @since 4.0.0
-*/
-const provide = provideScope;
-/**
-* Registers an exit-aware finalizer on a scope.
-*
-* **When to use**
-*
-* Use when cleanup needs to know whether the scope closed with success,
-* failure, or interruption.
-*
-* **Details**
-*
-* If the scope is open, the finalizer runs when the scope closes and receives
-* the scope's exit value. If the scope is already closed, the finalizer runs
-* immediately with the stored exit value.
-*
-* **Example** (Adding an exit-aware finalizer)
-*
-* ```ts import.meta.vitest
-* import { Effect, Exit, Scope } from "effect"
-*
-* const exits: Array<Exit.Exit<unknown, unknown>> = []
-* const withResource = Effect.gen(function*() {
-*   const scope = yield* Scope.make()
-*   yield* Scope.addFinalizerExit(scope, (exit) => Effect.sync(() => exits.push(exit)))
-*   yield* Scope.close(scope, Exit.void)
-* })
-*
-* Effect.runSync(withResource)
-* exits // => [Exit.void]
-* ```
-*
-* @stability stable
-* @category combinators
-* @since 2.0.0
-*/
-const addFinalizerExit = scopeAddFinalizerExit;
-/**
-* Registers a finalizer effect on a scope.
-*
-* **Details**
-*
-* If the scope is open, the finalizer runs when the scope closes, regardless of
-* whether the scope closes successfully or with an error. If the scope is
-* already closed, the finalizer runs immediately.
-*
-* **Example** (Adding finalizers)
-*
-* ```ts import.meta.vitest
-* import { Effect, Exit, Scope } from "effect"
-*
-* const events: Array<string> = []
-* const program = Effect.gen(function*() {
-*   const scope = yield* Scope.make()
-*   yield* Scope.addFinalizer(scope, Effect.sync(() => events.push("cleanup 1")))
-*   yield* Scope.addFinalizer(scope, Effect.sync(() => events.push("cleanup 2")))
-*   yield* Scope.addFinalizer(scope, Effect.sync(() => events.push("cleanup 3")))
-*   events.push("work")
-*   yield* Scope.close(scope, Exit.void)
-* })
-*
-* Effect.runSync(program)
-* events // => ["work", "cleanup 3", "cleanup 2", "cleanup 1"]
-* ```
-*
-* @stability stable
-* @category combinators
-* @since 2.0.0
-*/
-const addFinalizer$1 = scopeAddFinalizer;
-/**
-* Creates a closeable child scope synchronously and registers it with a parent scope.
-*
-* **When to use**
-*
-* Use when a child scope must be created synchronously and the caller controls
-* both parent and child scope lifetimes.
-*
-* **Details**
-*
-* Closing the parent closes the child with the same exit value, and closing the
-* child detaches it from the parent. The optional finalizer strategy configures
-* the child scope and defaults to `"sequential"` when omitted.
-*
-* **Example** (Creating a child scope synchronously)
-*
-* ```ts import.meta.vitest
-* import { Effect, Exit, Scope } from "effect"
-*
-* const cleanups: Array<string> = []
-* const program = Effect.gen(function*() {
-*   const parentScope = Scope.makeUnsafe("sequential")
-*   const childScope = Scope.forkUnsafe(parentScope, "parallel")
-*   yield* Scope.addFinalizer(parentScope, Effect.sync(() => cleanups.push("parent")))
-*   yield* Scope.addFinalizer(childScope, Effect.sync(() => cleanups.push("child")))
-*   yield* Scope.close(childScope, Exit.void)
-*   yield* Scope.close(parentScope, Exit.void)
-* })
-*
-* Effect.runSync(program)
-* cleanups // => ["child", "parent"]
-* ```
-*
-* @stability stable
-* @category combinators
-* @since 4.0.0
-*/
-const forkUnsafe = scopeForkUnsafe;
-/**
-* Closes a scope and runs its registered finalizers.
-*
-* **When to use**
-*
-* Use to close a scope manually with a specific exit value.
-*
-* **Details**
-*
-* Finalizers run in the scope's configured order and receive the supplied
-* `Exit`.
-* By default, finalizers run uninterruptibly, so interrupting the closing fiber
-* waits for them to finish; a finalizer can explicitly restore interruptibility.
-*
-* **Gotchas**
-*
-* Closing a scope that is already closed returns immediately, even when the
-* finalizers of an earlier close are still running.
-*
-* **Example** (Running scope finalizers)
-*
-* ```ts import.meta.vitest
-* import { Effect, Exit, Scope } from "effect"
-*
-* const events: Array<string> = []
-* const resourceManagement = Effect.gen(function*() {
-*   const scope = yield* Scope.make("sequential")
-*   yield* Scope.addFinalizer(scope, Effect.sync(() => events.push("database")))
-*   yield* Scope.addFinalizer(scope, Effect.sync(() => events.push("file")))
-*   yield* Scope.addFinalizer(scope, Effect.sync(() => events.push("memory")))
-*   events.push("work")
-*   yield* Scope.close(scope, Exit.succeed("Success!"))
-* })
-*
-* Effect.runSync(resourceManagement)
-* events // => ["work", "memory", "file", "database"]
-* ```
-*
-* @stability stable
-* @category combinators
-* @since 2.0.0
-*/
-const close = scopeClose;
 // node_modules/.pnpm/effect@4.1.2/node_modules/effect/dist/internal/dateTime.js
 /** @internal */
-const TypeId$15 = "~effect/DateTime";
+const TypeId$11 = "~effect/DateTime";
 /** @internal */
 const TimeZoneTypeId = "~effect/DateTime/TimeZone";
 const Proto$4 = {
-	[TypeId$15]: TypeId$15,
+	[TypeId$11]: TypeId$11,
 	pipe() {
 		return pipeArguments(this, arguments);
 	},
@@ -6956,7 +5950,7 @@ Object.defineProperties(ProtoZoned, {
 	partsAdjusted: cacheAccessor("partsAdjusted", zonedSlots)
 });
 /** @internal */
-const isDateTime$1 = (u) => hasProperty(u, TypeId$15);
+const isDateTime$1 = (u) => hasProperty(u, TypeId$11);
 /** @internal */
 const toDateUtc$1 = (self) => new Date(self.epochMilliseconds);
 /** @internal */
@@ -7005,72 +5999,6 @@ const formatIsoOffset = (self) => {
 /** @internal */
 const formatIsoZoned = (self) => self.zone._tag === "Offset" ? formatIsoOffset(self) : `${formatIsoOffset(self)}[${self.zone.id}]`;
 // node_modules/.pnpm/effect@4.1.2/node_modules/effect/dist/Effect.js
-/**
-* Executes an effectful operation for each element in an `Iterable`.
-*
-* **When to use**
-*
-* Use to traverse an iterable with an effectful function while preserving
-* element order in the collected results.
-*
-* **Details**
-*
-* The `forEach` function applies a provided operation to each element in the
-* iterable, producing a new effect that returns an array of results.
-*
-* If any effect fails, the iteration stops immediately (short-circuiting), and
-* the error is propagated.
-*
-* Concurrency:
-*
-* The `concurrency` option controls how many operations are performed
-* concurrently. By default, the operations are performed sequentially.
-*
-* Discarding Results:
-*
-* If the `discard` option is set to `true`, the intermediate results are not
-* collected, and the final result of the operation is `void`.
-*
-* **Example** (Mapping over an iterable with effects)
-*
-* ```ts import.meta.vitest
-* import { Effect } from "effect"
-* const output: Array<unknown> = []
-*
-* const result = Effect.forEach(
-*   [1, 2, 3, 4, 5],
-*   (n, index) =>
-*     Effect.sync(() => { output.push(`Currently at index ${index}`) }).pipe(Effect.as(n * 2))
-* )
-*
-* void output.push(await Effect.runPromise(result))
-* output // => ["Currently at index 0", "Currently at index 1", "Currently at index 2", "Currently at index 3", "Currently at index 4", [2, 4, 6, 8, 10]]
-* ```
-*
-* **Example** (Running effects without collecting results)
-*
-* ```ts import.meta.vitest
-* import { Effect } from "effect"
-* const output: Array<unknown> = []
-*
-* // Apply effects but discard the results
-* const result = Effect.forEach(
-*   [1, 2, 3, 4, 5],
-*   (n, index) =>
-*     Effect.sync(() => { output.push(`Currently at index ${index}`) }).pipe(Effect.as(n * 2)),
-*   { discard: true }
-* )
-*
-* void output.push(await Effect.runPromise(result))
-* output // => ["Currently at index 0", "Currently at index 1", "Currently at index 2", "Currently at index 3", "Currently at index 4", undefined]
-* ```
-*
-* @see {@link all} for combining multiple effects into one.
-* @stability stable
-* @category collecting
-* @since 2.0.0
-*/
-const forEach = forEach$1;
 /**
 * Creates an `Effect` from an asynchronous computation that may throw or
 * reject, mapping failures into the error channel.
@@ -7270,96 +6198,6 @@ const succeed$1 = succeed$3;
 */
 const suspend = suspend$1;
 /**
-* Creates an `Effect` that represents a synchronous side-effectful computation.
-*
-* **When to use**
-*
-* Use when you need to wrap a synchronous side-effectful operation that is not
-* expected to throw.
-*
-* **Details**
-*
-* The provided function is evaluated lazily when the effect runs.
-*
-* **Gotchas**
-*
-* The function must not throw. If it throws, the thrown value is treated as a
-* defect, not as a typed failure. Use `try` when throwing is expected.
-*
-* **Example** (Capturing synchronous logging in an Effect)
-*
-* ```ts import.meta.vitest
-* import { Effect } from "effect"
-* const output: Array<unknown> = []
-*
-* const log = (message: string) =>
-*   Effect.sync(() => {
-*     void output.push(message) // side effect
-*   })
-*
-* //      ┌─── Effect<void, never, never>
-* //      ▼
-* const program = log("Hello, World!")
-* Effect.runSync(program)
-* output // => ["Hello, World!"]
-* ```
-*
-* @see {@link try_ | try} for a version that can handle failures.
-* @stability stable
-* @category constructors
-* @since 2.0.0
-*/
-const sync = sync$1;
-const void_ = void_$2;
-/**
-* Creates an `Effect` from a callback-based asynchronous API.
-*
-* **When to use**
-*
-* Use when you need to integrate APIs that complete through callbacks instead
-* of returning a `Promise`.
-*
-* **Details**
-*
-* The registration function receives a `resume` callback and, if it declares
-* a second parameter, an `AbortSignal` that is aborted if the fiber is
-* interrupted. Call `resume` at most once with the effect that should complete
-* the fiber; later calls are ignored. Return an optional cleanup effect from
-* the registration function to run if the fiber is interrupted.
-*
-* **Gotchas**
-*
-* The parameter check reads the registration function's `length` property,
-* which must be at least `2` and does not count a rest parameter or any
-* parameter from the first default value onward. `(...args) => ...` and
-* `(resume, signal = fallback) => ...` therefore receive `undefined` instead
-* of a signal, as do wrappers that forward arguments through rest parameters.
-* Declare both as ordinary parameters: `(resume, signal) => ...`.
-*
-* **Example** (Integrating callback APIs)
-*
-* ```ts import.meta.vitest
-* import { Effect } from "effect"
-* const output: Array<unknown> = []
-*
-* const fromCallback = (message: string) =>
-*   Effect.callback<void>((resume) => {
-*     queueMicrotask(() => {
-*       void output.push(message)
-*       resume(Effect.void)
-*     })
-*   })
-*
-* await Effect.runPromise(fromCallback("callback completed"))
-* output // => ["callback completed"]
-* ```
-*
-* @stability stable
-* @category constructors
-* @since 4.0.0
-*/
-const callback = callback$1;
-/**
 * Provides a way to write effectful code using generator functions, simplifying
 * control flow and error handling.
 *
@@ -7447,37 +6285,6 @@ const gen = gen$1;
 */
 const fail$1 = fail$3;
 /**
-* Creates an `Effect` that represents a failure with a specific `Cause`.
-*
-* **When to use**
-*
-* Use when you already have a full `Cause` and need to preserve defects,
-* interruptions, annotations, or combined failures in the effect's failure
-* channel.
-*
-* **Details**
-*
-* This function allows you to create effects that fail with complex error
-* structures, including multiple errors, defects, interruptions, and more.
-*
-* **Example** (Failing with a full Cause)
-*
-* ```ts import.meta.vitest
-* import { Cause, Effect } from "effect"
-*
-* const program = Effect.failCause(
-*   Cause.fail("Network error")
-* )
-*
-* Effect.runSync(Effect.flip(program)) // => "Network error"
-* ```
-*
-* @stability stable
-* @category constructors
-* @since 2.0.0
-*/
-const failCause = failCause$3;
-/**
 * Creates an `Effect` that represents a failure with a `Cause` computed lazily.
 *
 * **When to use**
@@ -7546,24 +6353,6 @@ const failCauseSync = failCauseSync$1;
 */
 const die = die$2;
 const try_ = try_$1;
-/**
-* Provides access to the current fiber within an effect computation.
-*
-* **Example** (Reading the current fiber)
-*
-* ```ts import.meta.vitest
-* import { Effect } from "effect"
-*
-* const program = Effect.withFiber((fiber) => Effect.succeed(typeof fiber.id))
-*
-* Effect.runSync(program) // => "number"
-* ```
-*
-* @stability stable
-* @category constructors
-* @since 4.0.0
-*/
-const withFiber = withFiber$1;
 /**
 * Chains effects to produce new `Effect` instances, useful for combining
 * operations that depend on previous results.
@@ -7639,142 +6428,6 @@ const withFiber = withFiber$1;
 * @since 2.0.0
 */
 const flatMap = flatMap$1;
-/**
-* Runs this effect and then runs another effect, optionally using the first
-* effect's success value to choose the next effect.
-*
-* **When to use**
-*
-* Use when you need one effect to run after another and the second effect may
-* depend on the first effect's success value.
-*
-* **Details**
-*
-* When the second argument is an `Effect`, the first success value is discarded
-* and the returned effect produces the second effect's value. When the second
-* argument is a function, it receives the first success value and must return
-* the next `Effect`.
-*
-* Failures or requirements from either effect are preserved in the returned
-* effect.
-*
-* **Example** (Choosing andThen syntax variants)
-*
-* ```ts import.meta.vitest
-* import { Effect, pipe } from "effect"
-* const output: Array<unknown> = []
-*
-* const myEffect = Effect.succeed(1)
-* const anotherEffect = Effect.succeed("done")
-*
-* const transformedWithPipe = pipe(myEffect, Effect.andThen(anotherEffect))
-* const transformedWithDataFirst = Effect.andThen(myEffect, anotherEffect)
-* const transformedWithMethod = myEffect.pipe(Effect.andThen(anotherEffect))
-*
-* void output.push(Effect.runSync(Effect.all([
-*   transformedWithPipe,
-*   transformedWithDataFirst,
-*   transformedWithMethod
-* ])))
-* output // => [['done', 'done', 'done']]
-* ```
-*
-* **Example** (Sequencing a discount calculation after fetching a total)
-*
-* ```ts import.meta.vitest
-* import { Data, Effect, pipe } from "effect"
-*
-* class DiscountRateError extends Data.TaggedError("DiscountRateError")<{}> {}
-*
-* // Function to apply a discount safely to a transaction amount
-* const applyDiscount = (
-*   total: number,
-*   discountRate: number
-* ): Effect.Effect<number, DiscountRateError> =>
-*   discountRate === 0
-*     ? Effect.fail(new DiscountRateError())
-*     : Effect.succeed(total - (total * discountRate) / 100)
-*
-* // Simulated asynchronous task to fetch a transaction amount from database
-* const fetchTransactionAmount = Effect.promise(() => Promise.resolve(100))
-*
-* // Using Effect.map and Effect.flatMap
-* const result1 = pipe(
-*   fetchTransactionAmount,
-*   Effect.map((amount) => amount * 2),
-*   Effect.flatMap((amount) => applyDiscount(amount, 5))
-* )
-*
-* await Effect.runPromise(result1) // => 190
-*
-* // Using Effect.andThen
-* const result2 = pipe(
-*   fetchTransactionAmount,
-*   Effect.andThen((amount) => Effect.succeed(amount * 2)),
-*   Effect.andThen((amount) => applyDiscount(amount, 5))
-* )
-*
-* await Effect.runPromise(result2) // => 190
-* ```
-*
-* @stability stable
-* @category sequencing
-* @since 2.0.0
-*/
-const andThen = andThen$1;
-/**
-* Runs a side effect with the result of an effect without changing the original
-* value.
-*
-* **When to use**
-*
-* Use when you need to run an effectful observation, such as logging or
-* tracking, while passing the original success value to the next step.
-*
-* **Details**
-*
-* `tap` works similarly to `flatMap`, but it ignores the result of the function
-* passed to it. The value from the previous effect remains available for the
-* next part of the chain. Note that if the side effect fails, the entire chain
-* will fail too.
-*
-* **Example** (Logging a step in a pipeline)
-*
-* ```ts import.meta.vitest
-* import { Data, Effect, pipe } from "effect"
-* const output: Array<unknown> = []
-*
-* class DiscountRateError extends Data.TaggedError("DiscountRateError")<{}> {}
-*
-* // Function to apply a discount safely to a transaction amount
-* const applyDiscount = (
-*   total: number,
-*   discountRate: number
-* ): Effect.Effect<number, DiscountRateError> =>
-*   discountRate === 0
-*     ? Effect.fail(new DiscountRateError())
-*     : Effect.succeed(total - (total * discountRate) / 100)
-*
-* // Simulated asynchronous task to fetch a transaction amount from database
-* const fetchTransactionAmount = Effect.promise(() => Promise.resolve(100))
-*
-* const finalAmount = pipe(
-*   fetchTransactionAmount,
-*   // Log the fetched transaction amount
-*   Effect.tap((amount) => Effect.sync(() => { output.push(`Apply a discount to: ${amount}`) })),
-*   // `amount` is still available!
-*   Effect.flatMap((amount) => applyDiscount(amount, 5))
-* )
-*
-* void output.push(await Effect.runPromise(finalAmount))
-* output // => ["Apply a discount to: 100", 95]
-* ```
-*
-* @stability stable
-* @category sequencing
-* @since 2.0.0
-*/
-const tap = tap$1;
 /**
 * Converts both success and failure of an `Effect` into a `Result` type.
 *
@@ -7874,120 +6527,6 @@ const result = result$1;
 */
 const exit = exit$1;
 /**
-* Transforms the value inside an effect by applying a function to it.
-*
-* **When to use**
-*
-* Use to transform an effect's success value with a function that returns a
-* plain value, producing a new effect without changing the original effect's
-* typed error or context requirements.
-*
-* **Details**
-*
-* `map` takes a function and applies it to the value contained within an
-* effect, creating a new effect with the transformed value.
-*
-* It's important to note that effects are immutable, meaning that the original
-* effect is not modified. Instead, a new effect is returned with the updated
-* value.
-*
-* **Example** (Choosing map syntax variants)
-*
-* ```ts import.meta.vitest
-* import { Effect, pipe } from "effect"
-* const output: Array<unknown> = []
-*
-* const myEffect = Effect.succeed(1)
-* const transformation = (n: number) => n + 1
-*
-* const mappedWithPipe = pipe(myEffect, Effect.map(transformation))
-* const mappedWithDataFirst = Effect.map(myEffect, transformation)
-* const mappedWithMethod = myEffect.pipe(Effect.map(transformation))
-*
-* void output.push(Effect.runSync(Effect.all([
-*   mappedWithPipe,
-*   mappedWithDataFirst,
-*   mappedWithMethod
-* ])))
-* output // => [[2, 2, 2]]
-* ```
-*
-* **Example** (Adding a service charge)
-*
-* ```ts import.meta.vitest
-* import { Effect, pipe } from "effect"
-*
-* const addServiceCharge = (amount: number) => amount + 1
-*
-* const fetchTransactionAmount = Effect.promise(() => Promise.resolve(100))
-*
-* const finalAmount = pipe(
-*   fetchTransactionAmount,
-*   Effect.map(addServiceCharge)
-* )
-*
-* await Effect.runPromise(finalAmount) // => 101
-* ```
-*
-* @see {@link mapError} for a version that operates on the error channel.
-* @see {@link mapBoth} for a version that operates on both channels.
-* @see {@link flatMap} or {@link andThen} for a version that can return a new effect.
-* @stability stable
-* @category mapping
-* @since 2.0.0
-*/
-const map = map$2;
-/**
-* Replaces the value inside an effect with a constant value.
-*
-* **When to use**
-*
-* Use to replace a successful value with a constant while preserving failures
-* and requirements.
-*
-* **Details**
-*
-* `as` allows you to ignore the original value inside an effect and
-* replace it with a new constant value.
-*
-* **Example** (Replacing a success value)
-*
-* ```ts import.meta.vitest
-* import { Effect, pipe } from "effect"
-*
-* // Replaces the value 5 with the constant "new value"
-* const program = pipe(Effect.succeed(5), Effect.as("new value"))
-*
-* Effect.runSync(program) // => "new value"
-* ```
-*
-* @see {@link map} for deriving the replacement value from the success value
-* @see {@link asVoid} for replacing the success value with `void`
-*
-* @stability stable
-* @category mapping
-* @since 2.0.0
-*/
-const as = as$1;
-/**
-* Maps the success value of an `Effect` to `void`, preserving failures.
-*
-* **Example** (Discarding success values)
-*
-* ```ts import.meta.vitest
-* import { Effect } from "effect"
-*
-* const program = Effect.asVoid(Effect.succeed(42))
-*
-* Effect.runSync(program) // => undefined
-* ```
-*
-* @stability stable
-* @category mapping
-* @since 2.0.0
-*/
-const asVoid = asVoid$1;
-/**
 * Handles both recoverable and unrecoverable errors by providing a recovery
 * effect.
 *
@@ -8033,223 +6572,6 @@ const asVoid = asVoid$1;
 * @since 4.0.0
 */
 const catchCause = catchCause$1;
-/**
-* Runs an effect conditionally based on the result of an effectful boolean
-* condition.
-*
-* **When to use**
-*
-* Use when you need an effectful check to decide whether another effect should
-* run while representing the skipped case explicitly.
-*
-* **Details**
-*
-* The condition effect is evaluated first. If it succeeds with `true`, the
-* source effect is run and its success value is wrapped in `Option.some`. If it
-* succeeds with `false`, the source effect is skipped and the result is
-* `Option.none`. If the condition effect fails, that failure is preserved.
-*
-* **Example** (Conditionally running an effect)
-*
-* ```ts import.meta.vitest
-* import { Effect, Option } from "effect"
-* const output: Array<unknown> = []
-*
-* const shouldLog = true
-*
-* const program = Effect.when(
-*   Effect.sync(() => { output.push("Condition is true!") }),
-*   Effect.succeed(shouldLog)
-* )
-*
-* void output.push(Effect.runSync(program))
-* output // => ["Condition is true!", Option.some(undefined)]
-* ```
-*
-* @stability stable
-* @category filtering
-* @since 2.0.0
-*/
-const when = when$1;
-/**
-* Transforms the current context using the provided function.
-*
-* **When to use**
-*
-* Use to derive an effect from the complete `Context`.
-*
-* **Details**
-*
-* This function allows you to access the complete context and perform
-* computations based on all available services. This is useful when you need
-* to conditionally execute logic based on what services are available.
-*
-* **Example** (Deriving values from the context)
-*
-* ```ts import.meta.vitest
-* import { Context, Effect, Option } from "effect"
-* const output: Array<unknown> = []
-*
-* const Logger = Context.Service<{
-*   log: (msg: string) => void
-* }>("Logger")
-* const Cache = Context.Service<{
-*   get: (key: string) => string | null
-* }>("Cache")
-*
-* const program = Effect.contextWith((services: Context.Context<Context.Service.Identifier<typeof Cache>>) => {
-*   const cacheOption = Context.getOption(services, Cache)
-*   const hasCache = Option.isSome(cacheOption)
-*
-*   if (hasCache) {
-*     return Effect.gen(function*() {
-*       const cache = yield* Effect.service(Cache)
-*       yield* Effect.sync(() => { output.push("Using cached data") })
-*       return cache.get("user:123") || "default"
-*     })
-*   } else {
-*     return Effect.gen(function*() {
-*       yield* Effect.sync(() => { output.push("No cache available, using fallback") })
-*       return "fallback data"
-*     })
-*   }
-* })
-*
-* const withCache = Effect.provideService(program, Cache, {
-*   get: () => "cached_value"
-* })
-* void output.push(Effect.runSync(withCache))
-* output // => ["Using cached data", "cached_value"]
-* ```
-*
-* @see {@link context} for reading the complete context as a value
-* @see {@link service} for reading one service from the context
-*
-* @stability stable
-* @category accessors
-* @since 2.0.0
-*/
-const contextWith = contextWith$1;
-/**
-* Adds a finalizer to the current scope.
-*
-* **When to use**
-*
-* Use to register low-level cleanup in the current scope.
-*
-* **Details**
-*
-* The finalizer runs when the surrounding scope is closed and receives the
-* `Exit` value used to close the scope.
-*
-* **Example** (Registering scope finalizers)
-*
-* ```ts import.meta.vitest
-* import { Effect, Exit } from "effect"
-* const output: Array<unknown> = []
-*
-* const program = Effect.scoped(
-*   Effect.gen(function*() {
-*     // Add a finalizer that runs when the scope closes
-*     yield* Effect.addFinalizer((exit) =>
-*       Effect.sync(() => { output.push(
-*         Exit.isSuccess(exit)
-*           ? "Cleanup: Operation completed successfully"
-*           : "Cleanup: Operation failed, cleaning up resources"
-*       ) })
-*     )
-*
-*     yield* Effect.sync(() => { output.push("Performing main operation...") })
-*
-*     // This could succeed or fail
-*     return "operation result"
-*   })
-* )
-*
-* void output.push(Effect.runSync(program))
-* output // => ["Performing main operation...", "Cleanup: Operation completed successfully", "operation result"]
-* ```
-*
-* @see {@link acquireRelease} for resource acquisition with a release finalizer
-* @see {@link ensuring} for attaching a finalizer to one effect
-*
-* @stability stable
-* @category resource management
-* @since 2.0.0
-*/
-const addFinalizer = addFinalizer$2;
-/**
-* Returns an effect that is immediately interrupted.
-*
-* **Example** (Creating an interrupted effect)
-*
-* ```ts import.meta.vitest
-* import { Effect } from "effect"
-*
-* const program = Effect.gen(function*() {
-*   return yield* Effect.interrupt
-*   yield* Effect.succeed("This won't execute and is unreachable")
-* })
-*
-* Effect.runSyncExit(program)._tag // => "Failure"
-* ```
-*
-* @stability stable
-* @category interruption
-* @since 2.0.0
-*/
-const interrupt = interrupt$2;
-/**
-* Runs the specified finalizer effect if this effect is interrupted.
-*
-* **Example** (Running cleanup on interruption)
-*
-* ```ts import.meta.vitest
-* import { Effect, Fiber } from "effect"
-* const output: Array<unknown> = []
-*
-* const task = Effect.forever(Effect.succeed("working..."))
-*
-* const program = Effect.onInterrupt(
-*   task,
-*   () => Effect.sync(() => { output.push("Task was interrupted, cleaning up...") })
-* )
-*
-* const fiber = Effect.runFork(program)
-* await Effect.runPromise(Fiber.interrupt(fiber))
-* output // => ["Task was interrupted, cleaning up..."]
-* ```
-*
-* @stability stable
-* @category interruption
-* @since 2.0.0
-*/
-const onInterrupt = onInterrupt$1;
-/**
-* Returns a new effect that disables interruption for the given effect.
-*
-* **Example** (Preventing interruption)
-*
-* ```ts import.meta.vitest
-* import { Effect } from "effect"
-* const output: Array<unknown> = []
-*
-* const criticalTask = Effect.gen(function*() {
-*   yield* Effect.sync(() => { output.push("Starting critical section...") })
-*   yield* Effect.sync(() => { output.push("Critical section completed") })
-* })
-*
-* const program = Effect.uninterruptible(criticalTask)
-*
-* Effect.runSync(program)
-* output // => ["Starting critical section...", "Critical section completed"]
-* ```
-*
-* @stability stable
-* @category interruption
-* @since 2.0.0
-*/
-const uninterruptible = uninterruptible$1;
 /**
 * Executes an effect and returns the result as a `Promise`.
 *
@@ -8492,7 +6814,7 @@ const fromOptionExit = (option) => option._tag === "None" ? missingExit : succee
 * @stability stable
 * @since 4.0.0
 */
-const TypeId$10 = "~effect/SchemaIssue/Issue";
+const TypeId$6 = "~effect/SchemaIssue/Issue";
 /**
 * Returns `true` if the given value is an {@link Issue}.
 *
@@ -8523,7 +6845,7 @@ const TypeId$10 = "~effect/SchemaIssue/Issue";
 * @since 4.0.0
 */
 function isIssue(u) {
-	return hasProperty(u, TypeId$10) && u[TypeId$10] === TypeId$10;
+	return hasProperty(u, TypeId$6) && u[TypeId$6] === TypeId$6;
 }
 /**
 * Returns `true` when an issue contains an input reported by the schema parser.
@@ -8559,7 +6881,7 @@ function hasInput(issue) {
 	return Object.hasOwn(issue, "input");
 }
 var IssueNodeImpl = class {
-	[TypeId$10] = TypeId$10;
+	[TypeId$6] = TypeId$6;
 	constructor(input, options) {
 		if (options?.reportInput === true && input !== missing) this.input = input;
 	}
@@ -8790,7 +7112,7 @@ function makeSingle(out, input, options) {
 function normalizeFilterOutput(ast, out, input, options) {
 	if (Array.isArray(out)) {
 		if (!isReadonlyArrayNonEmpty(out)) return;
-		return out.length === 1 ? makeFilterIssue(out[0], input, options) : new Composite(ast, map$3(out, (entry) => makeFilterIssue(entry, input, options)), input, options);
+		return out.length === 1 ? makeFilterIssue(out[0], input, options) : new Composite(ast, map$2(out, (entry) => makeFilterIssue(entry, input, options)), input, options);
 	}
 	return makeSingle(out, input, options);
 }
@@ -9218,7 +7540,7 @@ const Middleware = class extends Class$1 {
 		return new Middleware(this.encode, this.decode);
 	}
 };
-const TypeId$9 = "~effect/SchemaTransformation/Transformation";
+const TypeId$5 = "~effect/SchemaTransformation/Transformation";
 /**
 * Constructs a bidirectional schema transformation from its decode and encode getters.
 *
@@ -9227,7 +7549,7 @@ const TypeId$9 = "~effect/SchemaTransformation/Transformation";
 * @since 4.0.0
 */
 const Transformation = class extends Class$1 {
-	[TypeId$9] = TypeId$9;
+	[TypeId$5] = TypeId$5;
 	_tag = "Transformation";
 	decode;
 	encode;
@@ -9270,7 +7592,7 @@ const Transformation = class extends Class$1 {
 * @since 4.0.0
 */
 function isTransformation(u) {
-	return hasProperty(u, TypeId$9) && u[TypeId$9] === TypeId$9;
+	return hasProperty(u, TypeId$5) && u[TypeId$5] === TypeId$5;
 }
 /**
 * Constructs a `Transformation` from an object with `decode` and `encode`
@@ -9616,9 +7938,9 @@ const Context = class {
 		this.annotations = annotations;
 	}
 };
-const TypeId$8 = "~effect/Schema";
+const TypeId$4 = "~effect/Schema";
 var ASTNodeImpl = class {
-	[TypeId$8] = TypeId$8;
+	[TypeId$4] = TypeId$4;
 	annotations;
 	checks;
 	encoding;
@@ -10057,7 +8379,7 @@ const parseArrayConcurrent = /*#__PURE__*/ iterateConcurrent()(parseArrayOptions
 const wrapPropertyKeyIssue = (s, ast, key, exit) => {
 	if (exit.cause.reasons.length === 0) return exit;
 	const issue = getSchemaIssue(exit.cause);
-	if (issue === void 0) return failCause$2(map$1(exit.cause, (issue) => new Composite(ast, [new Pointer([key], issue)], s.input, s.options)));
+	if (issue === void 0) return failCause(map(exit.cause, (issue) => new Composite(ast, [new Pointer([key], issue)], s.input, s.options)));
 	const pointer = new Pointer([key], issue);
 	if (s.options.errors === "all") {
 		if (s.issues) s.issues.push(pointer);
@@ -10191,13 +8513,13 @@ const Objects = class extends ASTNodeImpl {
 		const makeFallback = () => {
 			const expectedKeys = new Set(ast.propertySignatures.map((ps) => typeof ps.name === "number" ? globalThis.String(ps.name) : ps.name));
 			const finishIndex = (s, key, k2, inputValue, exitValue) => {
-				if (exitValue._tag === "Failure") return wrapPropertyKeyIssue(s, ast, key, exitValue) ?? void_$1;
+				if (exitValue._tag === "Failure") return wrapPropertyKeyIssue(s, ast, key, exitValue) ?? void_;
 				const value = exitValue === sameExit ? inputValue : exitValue[args];
 				if (k2 !== missing && value !== missing) {
-					if (hasProperties && (expectedKeys.has(key) || expectedKeys.has(typeof k2 === "number" ? globalThis.String(k2) : k2))) return void_$1;
+					if (hasProperties && (expectedKeys.has(key) || expectedKeys.has(typeof k2 === "number" ? globalThis.String(k2) : k2))) return void_;
 					assignProperty(s.out, k2, value);
 				}
-				return void_$1;
+				return void_;
 			};
 			const parseIndex = (s, key, index, exitKey) => {
 				if (!exitKey) {
@@ -10205,7 +8527,7 @@ const Objects = class extends ASTNodeImpl {
 					if (!effectIsExit(eff)) return flatMap(exit(eff), (exit) => parseIndex(s, key, index, exit));
 					exitKey = eff;
 				}
-				if (exitKey._tag === "Failure") return wrapPropertyKeyIssue(s, ast, key, exitKey) ?? void_$1;
+				if (exitKey._tag === "Failure") return wrapPropertyKeyIssue(s, ast, key, exitKey) ?? void_;
 				const k2 = exitKey === sameExit ? key : exitKey[args];
 				const inputValue = s.input[key];
 				const result = index.parserValue(inputValue, s.options);
@@ -10694,7 +9016,7 @@ const Union$1 = class extends ASTNodeImpl {
 };
 function failSingleUnionCandidate(ast, cause, input, options) {
 	const issue = getSchemaIssue(cause);
-	if (!issue) return failCause$2(cause);
+	if (!issue) return failCause(cause);
 	return fail$2(new AnyOf(ast, [issue], input, options));
 }
 function catchSingleUnionCandidate(ast, result, input, options) {
@@ -10747,7 +9069,7 @@ const parseUnion = /*#__PURE__*/ iterateEager()({
 			}
 			s.out = exit;
 			if (s.successes) s.successes.push(s.ast.types[i]);
-			else return void_$1;
+			else return void_;
 		}
 	}
 });
@@ -10936,7 +9258,7 @@ function getLastEncoding(ast) {
 function annotate(ast, annotations) {
 	if (ast.checks) {
 		const last = ast.checks[ast.checks.length - 1];
-		return replaceChecks(ast, append$1(ast.checks.slice(0, -1), last.annotate(annotations)));
+		return replaceChecks(ast, append(ast.checks.slice(0, -1), last.annotate(annotations)));
 	}
 	return copy(ast, { annotations: {
 		...ast.annotations,
@@ -10962,7 +9284,7 @@ function updateLastLink(encoding, f) {
 	const links = encoding;
 	const last = links[links.length - 1];
 	const out = mapLink(last, f);
-	return out === last ? encoding : append$1(encoding.slice(0, encoding.length - 1), out);
+	return out === last ? encoding : append(encoding.slice(0, encoding.length - 1), out);
 }
 /** @internal */
 function applyToLastLink(f) {
@@ -11399,7 +9721,7 @@ function compileTransformationUnsafe(transformation) {
 }
 const fromOptionalEffect = (effect) => flatMapEager(effect, fromOptionExit);
 /** @internal */
-const wrapEncoding = (ast, input, options, effect) => catchCause(effect, (cause) => failCauseSync(() => map$1(cause, (issue) => new Encoding(ast, issue, input, options))));
+const wrapEncoding = (ast, input, options, effect) => catchCause(effect, (cause) => failCauseSync(() => map(cause, (issue) => new Encoding(ast, issue, input, options))));
 function makeConstructorParser(descriptor, compile) {
 	const transform = compileTransformation(descriptor.link.transformation);
 	let sourceParser;
@@ -11639,7 +9961,7 @@ function makeOption(schema) {
 * @category constructors
 * @since 4.0.0
 */
-function make$5(schema) {
+function make$2(schema) {
 	return makeConstructorSync(toType(schema.ast));
 }
 /**
@@ -11776,12 +10098,12 @@ const normalCompiler = (ast) => resolve(ast).parser;
 const constructorCompiler = (ast) => resolve(ast).makeEffect;
 // node_modules/.pnpm/effect@4.1.2/node_modules/effect/dist/internal/schema/make.js
 /** @internal */
-const TypeId$7 = "~effect/Schema/Schema";
+const TypeId$3 = "~effect/Schema/Schema";
 const RebuildOptions = /*#__PURE__*/ Symbol();
 const SchemaProto = {
-	[TypeId$7]: TypeId$7,
+	[TypeId$3]: TypeId$3,
 	get make() {
-		const value = make$5(this);
+		const value = make$2(this);
 		Object.defineProperty(this, "make", {
 			value,
 			enumerable: true
@@ -11817,11 +10139,11 @@ const SchemaProto = {
 		return this.rebuild(appendChecks(this.ast, checks));
 	},
 	rebuild(ast) {
-		return make$4(ast, this[RebuildOptions]);
+		return make$1(ast, this[RebuildOptions]);
 	}
 };
 /** @internal */
-function make$4(ast, options) {
+function make$1(ast, options) {
 	function Schema() {}
 	const self = Object.setPrototypeOf(Schema, SchemaProto);
 	if (options && (Object.hasOwn(options, "name") || Object.hasOwn(options, "length") || Object.hasOwn(options, "__proto__"))) Object.defineProperties(self, Object.getOwnPropertyDescriptors({ ...options }));
@@ -11883,7 +10205,7 @@ function isSchemaError$1(u) {
 ({ ...BaseProto });
 ({ ...BaseProto });
 // node_modules/.pnpm/effect@4.1.2/node_modules/effect/dist/Schema.js
-const TypeId$4 = TypeId$7;
+const TypeId = TypeId$3;
 /**
 * Error thrown or returned when schema decoding or encoding fails.
 *
@@ -11968,10 +10290,10 @@ function isSchemaError(u) {
 }
 function fromIssueEffect(self) {
 	if (effectIsExit(self)) return fromIssueExit(self);
-	return catchCause(self, (cause) => failCauseSync(() => map$1(cause, (issue) => new SchemaError(issue))));
+	return catchCause(self, (cause) => failCauseSync(() => map(cause, (issue) => new SchemaError(issue))));
 }
 function fromIssueExit(exit) {
-	return isSuccess(exit) ? exit : failCause$2(map$1(exit.cause, (issue) => new SchemaError(issue)));
+	return isSuccess(exit) ? exit : failCause(map(exit.cause, (issue) => new SchemaError(issue)));
 }
 function getSchemaErrorOrThrow(cause, message) {
 	let schemaError;
@@ -12174,7 +10496,7 @@ const encodeSync = encodeUnknownSync;
 * @category constructors
 * @since 3.10.0
 */
-const make$3 = make$4;
+const make = make$1;
 /**
 * Checks whether a value is a `Schema`.
 *
@@ -12183,7 +10505,7 @@ const make$3 = make$4;
 * @since 3.10.0
 */
 function isSchema(u) {
-	return hasProperty(u, TypeId$4) && u[TypeId$4] === TypeId$4;
+	return hasProperty(u, TypeId) && u[TypeId] === TypeId;
 }
 /**
 * Creates an exact optional key schema for struct fields. Unlike `optional`,
@@ -12208,7 +10530,7 @@ function isSchema(u) {
 * @category combinators
 * @since 4.0.0
 */
-const optionalKey = /*#__PURE__*/ lambda((schema) => make$3(optionalKey$1(schema.ast), { schema }));
+const optionalKey = /*#__PURE__*/ lambda((schema) => make(optionalKey$1(schema.ast), { schema }));
 /**
 * Creates a schema for a single literal value (string, number, bigint, boolean, or null).
 *
@@ -12230,7 +10552,7 @@ const optionalKey = /*#__PURE__*/ lambda((schema) => make$3(optionalKey$1(schema
 * @since 3.10.0
 */
 function Literal(literal) {
-	const out = make$3(new Literal$1(literal), {
+	const out = make(new Literal$1(literal), {
 		literal,
 		transform(to) {
 			return out.pipe(decodeTo(Literal(to), {
@@ -12254,7 +10576,7 @@ function Literal(literal) {
 * @category schemas
 * @since 3.10.0
 */
-const Unknown = /*#__PURE__*/ make$3(unknown);
+const Unknown = /*#__PURE__*/ make(unknown);
 /**
 * Schema for the `null` literal. Validates that the input is strictly `null`.
 *
@@ -12263,7 +10585,7 @@ const Unknown = /*#__PURE__*/ make$3(unknown);
 * @category schemas
 * @since 3.10.0
 */
-const Null = /*#__PURE__*/ make$3(null_);
+const Null = /*#__PURE__*/ make(null_);
 /**
 * Schema for `string` values. Validates that the input is `typeof` `"string"`.
 *
@@ -12271,7 +10593,7 @@ const Null = /*#__PURE__*/ make$3(null_);
 * @category schemas
 * @since 4.0.0
 */
-const String$1 = /*#__PURE__*/ make$3(string);
+const String$1 = /*#__PURE__*/ make(string);
 /**
 * Schema for `number` values, including `NaN`, `Infinity`, and `-Infinity`.
 *
@@ -12287,7 +10609,7 @@ const String$1 = /*#__PURE__*/ make$3(string);
 * @category schemas
 * @since 4.0.0
 */
-const Number$1 = /*#__PURE__*/ make$3(number);
+const Number$1 = /*#__PURE__*/ make(number);
 /**
 * Schema for `boolean` values. Validates that the input is `typeof` `"boolean"`.
 *
@@ -12301,9 +10623,9 @@ const Number$1 = /*#__PURE__*/ make$3(number);
 * @category schemas
 * @since 4.0.0
 */
-const Boolean$1 = /*#__PURE__*/ make$3(boolean);
+const Boolean$1 = /*#__PURE__*/ make(boolean);
 function makeStruct(ast, fields) {
-	return make$3(ast, {
+	return make(ast, {
 		fields,
 		mapFields(f, options) {
 			const fields = f(this.fields);
@@ -12396,7 +10718,7 @@ function Struct(fields) {
 * @since 3.10.0
 */
 function Record(key, value) {
-	return make$3(record(key.ast, value.ast), {
+	return make(record(key.ast, value.ast), {
 		key,
 		value
 	});
@@ -12405,9 +10727,9 @@ function Record(key, value) {
 * @category constructors
 * @since 4.0.0
 */
-const ArraySchema = /*#__PURE__*/ lambda((schema) => make$3(new Arrays(false, [], [schema.ast]), { value: schema }));
+const ArraySchema = /*#__PURE__*/ lambda((schema) => make(new Arrays(false, [], [schema.ast]), { value: schema }));
 function makeUnion(ast, members) {
-	return make$3(ast, {
+	return make(ast, {
 		members,
 		mapMembers(f, options) {
 			const members = f(this.members);
@@ -12462,7 +10784,7 @@ function Union(members, options) {
 */
 function Literals(literals) {
 	const members = literals.map(Literal);
-	return make$3(union(members, void 0, void 0), {
+	return make(union(members, void 0, void 0), {
 		literals,
 		members,
 		mapMembers(f) {
@@ -12486,7 +10808,7 @@ function Literals(literals) {
 const NullOr = /*#__PURE__*/ lambda((self) => Union([self, Null]));
 function decodeTo(to, transformation) {
 	return (from) => {
-		return make$3(decodeTo$1(from.ast, to.ast, transformation ? makeTransformation(transformation) : passthrough()), {
+		return make(decodeTo$1(from.ast, to.ast, transformation ? makeTransformation(transformation) : passthrough()), {
 			from,
 			to
 		});
@@ -12520,7 +10842,7 @@ function decodeTo(to, transformation) {
 * @since 3.10.0
 */
 function withConstructorDefault(defaultValue) {
-	return (schema) => make$3(withConstructorDefault$1(schema.ast, defaultValue), { schema });
+	return (schema) => make(withConstructorDefault$1(schema.ast, defaultValue), { schema });
 }
 /**
 * Combines a {@link Literal} schema with {@link withConstructorDefault}, making it ideal
@@ -12980,7 +11302,7 @@ function makeClass(Inherited, identifier, struct$1, annotations, proto) {
 				}
 			});
 		}
-		static [TypeId$4] = TypeId$4;
+		static [TypeId] = TypeId;
 		get [ClassTypeId]() {
 			return ClassTypeId;
 		}
@@ -13057,7 +11379,7 @@ function getClassSchemaFactory(from, identifier, annotations) {
 		const ClassTypeId = getClassTypeId(identifier);
 		const isClassValue = (input) => input instanceof self || hasProperty(input, ClassTypeId);
 		const transformation = getClassTransformation(self);
-		return memo = decodeTo(make$3(new Declaration([from.ast], () => (input, ast, options) => {
+		return memo = decodeTo(make(new Declaration([from.ast], () => (input, ast, options) => {
 			return isClassValue(input) ? succeed$1(input) : fail$1(new InvalidType(ast, input, options));
 		}, {
 			identifier,
@@ -13160,7 +11482,7 @@ const TaggedError = (identifier) => {
 * @category schemas
 * @since 4.0.0
 */
-const Json = /*#__PURE__*/ make$3(/*#__PURE__*/ annotate(Json$1, { toCode: () => ({
+const Json = /*#__PURE__*/ make(/*#__PURE__*/ annotate(Json$1, { toCode: () => ({
 	runtime: "Schema.Json",
 	Type: "Schema.Json"
 }) }));
@@ -13450,1668 +11772,6 @@ Int.check(isBetween({
 	minimum: 1e3,
 	maximum: 18e5
 }));
-// node_modules/.pnpm/effect@4.1.2/node_modules/effect/dist/Latch.js
-/**
-* Creates a `Latch` synchronously, outside of `Effect`.
-*
-* **When to use**
-*
-* Use when you need to allocate a `Latch` synchronously outside an Effect
-* workflow.
-*
-* **Details**
-*
-* The latch starts closed by default; pass `true` to create it open.
-*
-* **Example** (Creating a latch unsafely)
-*
-* ```ts import.meta.vitest
-* import { Effect, Fiber, Latch } from "effect"
-*
-* const latch = Latch.makeUnsafe(false)
-* const waiter = latch.await.pipe(Effect.as("opened"))
-*
-* const program = Effect.gen(function*() {
-*   const fiber = yield* Effect.forkChild(waiter)
-*   yield* latch.open
-*   return yield* Fiber.join(fiber)
-* })
-*
-* await Effect.runPromise(program) // => "opened"
-* ```
-*
-* @see {@link make} for creating a latch inside Effect code
-*
-* @stability stable
-* @category constructors
-* @since 4.0.0
-*/
-const makeUnsafe = makeLatchUnsafe;
-// node_modules/.pnpm/effect@4.1.2/node_modules/effect/dist/MutableList.js
-/**
-* Mutable lists for collecting ordered values and draining them from the front.
-* A `MutableList<A>` can append values to the end, prepend values to the
-* beginning, take one or more values from the front, inspect its contents as an
-* array, filter values, remove values, and clear itself. All operations update
-* the same list object in place and keep its `length` field current. Taking
-* from an empty list returns the `Empty` symbol.
-*
-* @stability stable
-* @since 4.0.0
-*/
-/**
-* Defines the unique symbol used to represent an empty result when taking elements from a MutableList.
-* This symbol is returned by `take` when the list is empty, allowing for safe type checking.
-*
-* **When to use**
-*
-* Use to detect that `take` returned no element before handling the result as a
-* list item.
-*
-* **Example** (Checking for empty results)
-*
-* ```ts import.meta.vitest
-* import { MutableList } from "effect"
-*
-* const list = MutableList.make<string>()
-*
-* MutableList.take(list) === MutableList.Empty // => true
-* ```
-*
-* @stability stable
-* @category symbols
-* @since 4.0.0
-*/
-const Empty = /*#__PURE__*/ Symbol.for("effect/MutableList/Empty");
-/**
-* Creates an empty MutableList.
-*
-* **Example** (Creating an empty mutable list)
-*
-* ```ts import.meta.vitest
-* import { MutableList } from "effect"
-*
-* const list = MutableList.make<string>()
-*
-* list.length // => 0
-* MutableList.append(list, "first")
-* MutableList.take(list) // => "first"
-* list.length // => 0
-* ```
-*
-* @stability stable
-* @category constructors
-* @since 2.0.0
-*/
-const make$2 = () => ({
-	head: void 0,
-	tail: void 0,
-	length: 0
-});
-const compactHead = (self) => {
-	const head = self.head;
-	if (head.offset >= 1024 && head === self.tail && head.mutable && (head.array.length - head.offset) * 8 <= head.offset) self.head = self.tail = {
-		array: head.array.slice(head.offset),
-		mutable: true,
-		offset: 0,
-		next: void 0
-	};
-};
-const emptyBucket = () => ({
-	array: [],
-	mutable: true,
-	offset: 0,
-	next: void 0
-});
-/**
-* Appends an element to the end of the MutableList.
-* This operation is optimized for high-frequency usage.
-*
-* **Example** (Appending elements)
-*
-* ```ts import.meta.vitest
-* import { MutableList } from "effect"
-*
-* const list = MutableList.make<number>()
-* MutableList.append(list, 1)
-* MutableList.append(list, 2)
-* MutableList.append(list, 3)
-*
-* MutableList.toArray(list) // => [1, 2, 3]
-* list.length // => 3
-* ```
-*
-* @stability stable
-* @category mutations
-* @since 2.0.0
-*/
-const append = (self, message) => {
-	if (!self.tail) self.head = self.tail = emptyBucket();
-	else if (!self.tail.mutable) {
-		self.tail.next = emptyBucket();
-		self.tail = self.tail.next;
-	}
-	self.tail.array.push(message);
-	self.length++;
-};
-/**
-* Prepends an element to the beginning of the MutableList.
-* This operation is optimized for high-frequency usage.
-*
-* **Example** (Prepending elements)
-*
-* ```ts import.meta.vitest
-* import { MutableList } from "effect"
-*
-* const list = MutableList.make<string>()
-* MutableList.append(list, "last")
-* MutableList.prepend(list, "third")
-* MutableList.prepend(list, "second")
-* MutableList.prepend(list, "first")
-*
-* MutableList.toArray(list) // => ["first", "second", "third", "last"]
-* ```
-*
-* @stability stable
-* @category mutations
-* @since 2.0.0
-*/
-const prepend = (self, message) => {
-	self.head = {
-		array: [message],
-		mutable: true,
-		offset: 0,
-		next: self.head
-	};
-	if (!self.tail) self.tail = self.head;
-	self.length++;
-};
-/**
-* Removes all elements from the MutableList, resetting it to an empty state.
-* This operation is highly optimized and releases all internal memory.
-*
-* **Example** (Clearing a mutable list)
-*
-* ```ts import.meta.vitest
-* import { MutableList } from "effect"
-*
-* const list = MutableList.make<number>()
-* MutableList.appendAll(list, [1, 2, 3, 4, 5])
-*
-* MutableList.clear(list)
-*
-* MutableList.toArray(list) // => []
-* list.length // => 0
-* MutableList.take(list) === MutableList.Empty // => true
-* ```
-*
-* @stability stable
-* @category mutations
-* @since 4.0.0
-*/
-const clear = (self) => {
-	self.head = self.tail = void 0;
-	self.length = 0;
-};
-/**
-* Takes up to N elements from the beginning of the MutableList and returns them as an array.
-* The taken elements are removed from the list. This operation is optimized for performance
-* and includes zero-copy optimizations when possible.
-*
-* **Details**
-*
-* Finite fractional values of `n` are rounded down. `NaN` and non-positive
-* values leave the list unchanged and return an empty array.
-*
-* **Example** (Taking batches)
-*
-* ```ts import.meta.vitest
-* import { MutableList } from "effect"
-*
-* const list = MutableList.make<number>()
-* MutableList.appendAll(list, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-*
-* MutableList.takeN(list, 3) // => [1, 2, 3]
-* MutableList.toArray(list) // => [4, 5, 6, 7, 8, 9, 10]
-* list.length // => 7
-* ```
-*
-* @stability stable
-* @category mutations
-* @since 4.0.0
-*/
-const takeN = (self, n) => {
-	n = normalize$1(n);
-	if (n <= 0 || !self.head) return [];
-	n = Math.min(n, self.length);
-	if (n === self.length && self.head?.offset === 0 && !self.head.next) {
-		const array = self.head.array;
-		clear(self);
-		return array;
-	}
-	const array = new Array(n);
-	let index = 0;
-	let chunk = self.head;
-	while (chunk) {
-		while (chunk.offset < chunk.array.length) {
-			array[index++] = chunk.array[chunk.offset];
-			if (chunk.mutable) chunk.array[chunk.offset] = void 0;
-			chunk.offset++;
-			if (index === n) {
-				self.head = chunk.offset === chunk.array.length && chunk.next ? chunk.next : chunk;
-				self.length -= n;
-				if (self.length === 0) clear(self);
-				else compactHead(self);
-				return array;
-			}
-		}
-		chunk = chunk.next;
-	}
-	clear(self);
-	return array;
-};
-/**
-* Takes all elements from the MutableList and returns them as an array.
-* The list becomes empty after this operation. This is equivalent to takeN(list, list.length).
-*
-* **Example** (Draining all elements)
-*
-* ```ts import.meta.vitest
-* import { MutableList } from "effect"
-*
-* const list = MutableList.make<string>()
-* MutableList.appendAll(list, ["apple", "banana", "cherry"])
-*
-* MutableList.takeAll(list) // => ["apple", "banana", "cherry"]
-* list.length // => 0
-* ```
-*
-* @stability stable
-* @category mutations
-* @since 4.0.0
-*/
-const takeAll$1 = (self) => takeN(self, self.length);
-/**
-* Takes a single element from the beginning of the MutableList.
-* Returns the element if available, or the Empty symbol if the list is empty.
-* The taken element is removed from the list.
-*
-* **Example** (Taking one element)
-*
-* ```ts import.meta.vitest
-* import { MutableList } from "effect"
-*
-* const list = MutableList.make<string>()
-* MutableList.appendAll(list, ["first", "second", "third"])
-*
-* MutableList.take(list) // => "first"
-* MutableList.toArray(list) // => ["second", "third"]
-* list.length // => 2
-* ```
-*
-* @stability stable
-* @category mutations
-* @since 4.0.0
-*/
-const take = (self) => {
-	if (!self.head) return Empty;
-	const message = self.head.array[self.head.offset];
-	if (self.head.mutable) self.head.array[self.head.offset] = void 0;
-	self.head.offset++;
-	self.length--;
-	if (self.head.offset === self.head.array.length) {
-		if (self.head.next) self.head = self.head.next;
-		else clear(self);
-	} else compactHead(self);
-	return message;
-};
-/**
-* Filters the MutableList in place, keeping only elements that satisfy the predicate.
-* This operation modifies the list and rebuilds its internal structure for efficiency.
-* The predicate receives each element's current index.
-*
-* **Example** (Filtering in place)
-*
-* ```ts import.meta.vitest
-* import { MutableList } from "effect"
-*
-* const list = MutableList.make<number>()
-* MutableList.appendAll(list, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-*
-* MutableList.filter(list, (n) => n % 2 === 0)
-*
-* MutableList.toArray(list) // => [2, 4, 6, 8, 10]
-* ```
-*
-* @stability stable
-* @category mutations
-* @since 4.0.0
-*/
-const filter = (self, f) => {
-	const array = [];
-	let chunk = self.head;
-	let index = 0;
-	while (chunk) {
-		for (let i = chunk.offset; i < chunk.array.length; i++) if (f(chunk.array[i], index++)) array.push(chunk.array[i]);
-		chunk = chunk.next;
-	}
-	if (array.length === 0) {
-		clear(self);
-		return;
-	}
-	self.head = self.tail = {
-		array,
-		mutable: true,
-		offset: 0,
-		next: void 0
-	};
-	self.length = array.length;
-};
-/**
-* Removes all occurrences of a value from the `MutableList` using JavaScript
-* strict equality semantics.
-*
-* **When to use**
-*
-* Use when in-place removal should use JavaScript identity/strict equality
-* rather than Effect structural equality.
-*
-* **Details**
-*
-* The list is modified in place.
-*
-* **Gotchas**
-*
-* Values are compared with `!==`, so this does not use Effect structural
-* equality.
-*
-* **Example** (Removing matching values)
-*
-* ```ts import.meta.vitest
-* import { MutableList } from "effect"
-*
-* const list = MutableList.make<string>()
-* MutableList.appendAll(list, ["apple", "banana", "apple", "cherry", "apple"])
-*
-* MutableList.remove(list, "apple")
-*
-* MutableList.toArray(list) // => ["banana", "cherry"]
-* ```
-*
-* @stability stable
-* @category mutations
-* @since 4.0.0
-*/
-const remove = (self, value) => filter(self, (v) => v !== value);
-// node_modules/.pnpm/effect@4.1.2/node_modules/effect/dist/MutableRef.js
-const TypeId$3 = "~effect/MutableRef";
-const MutableRefProto = {
-	[TypeId$3]: TypeId$3,
-	...PipeInspectableProto,
-	toJSON() {
-		return {
-			_id: "MutableRef",
-			current: toJson(this.current)
-		};
-	}
-};
-/**
-* Creates a new MutableRef with the specified initial value.
-*
-* **When to use**
-*
-* Use to create a synchronous `MutableRef` initialized with a value.
-*
-* **Example** (Creating mutable refs)
-*
-* ```ts import.meta.vitest
-* import { MutableRef } from "effect"
-*
-* // Create a counter reference
-* const counter = MutableRef.make(0)
-*
-* MutableRef.get(counter) // => 0
-*
-* // Create a configuration reference
-* const config = MutableRef.make({ debug: false, timeout: 5000 })
-*
-* MutableRef.get(config) // => { debug: false, timeout: 5000 }
-*
-* // Create a string reference
-* const status = MutableRef.make("idle")
-* MutableRef.set(status, "running")
-*
-* MutableRef.get(status) // => "running"
-* ```
-*
-* @stability stable
-* @category constructors
-* @since 2.0.0
-*/
-const make$1 = (value) => {
-	const ref = Object.create(MutableRefProto);
-	ref.current = value;
-	return ref;
-};
-/**
-* Sets the MutableRef to a new value and returns the reference.
-*
-* **When to use**
-*
-* Use when you need an in-place `MutableRef` replacement that returns the same
-* `MutableRef`.
-*
-* **Example** (Setting values)
-*
-* ```ts import.meta.vitest
-* import { MutableRef } from "effect"
-*
-* const ref = MutableRef.make("initial")
-*
-* // Set a new value
-* MutableRef.set(ref, "updated")
-*
-* MutableRef.get(ref) // => "updated"
-*
-* // Chain set operations (since it returns the ref)
-* const result = MutableRef.set(ref, "final")
-*
-* result === ref // => true
-* MutableRef.get(ref) // => "final"
-*
-* // Set complex objects
-* const config = MutableRef.make({ debug: false, verbose: false })
-* MutableRef.set(config, { debug: true, verbose: true })
-*
-* MutableRef.get(config) // => { debug: true, verbose: true }
-*
-* // Pipe-able version
-* const setValue = MutableRef.set("new value")
-* setValue(ref)
-*
-* MutableRef.get(ref) // => "new value"
-*
-* // Useful for state management
-* const state = MutableRef.make<"idle" | "loading" | "success" | "error">("idle")
-* MutableRef.set(state, "loading")
-* // ... perform async operation
-* MutableRef.set(state, "success")
-*
-* MutableRef.get(state) // => "success"
-* ```
-*
-* @stability stable
-* @category mutations
-* @since 2.0.0
-*/
-const set = /*#__PURE__*/ dual(2, (self, value) => {
-	self.current = value;
-	return self;
-});
-// node_modules/.pnpm/effect@4.1.2/node_modules/effect/dist/PubSub.js
-/**
-* Broadcasts values from publishers to many subscribers.
-*
-* Publishers add messages with `publish` or `publishAll`, and each active
-* `Subscription` receives its own copy of every accepted message. Unlike a
-* queue, subscribers do not compete for messages. This module includes bounded,
-* dropping, sliding, and unbounded hubs, optional replay buffers for late
-* subscribers, message-taking helpers, capacity and shutdown operations, a
-* type guard, and low-level types for custom hub strategies.
-*
-* @stability stable
-* @since 2.0.0
-*/
-const TypeId$2 = "~effect/PubSub";
-const SubscriptionTypeId = "~effect/PubSub/Subscription";
-/**
-* Creates a PubSub with a custom atomic implementation and strategy.
-*
-* **Example** (Creating a PubSub with a custom strategy)
-*
-* ```ts import.meta.vitest
-* import { Effect, PubSub } from "effect"
-*
-* const program = Effect.gen(function*() {
-*   // Create custom PubSub with specific atomic implementation and strategy
-*   const pubsub = yield* PubSub.make<string>({
-*     atomicPubSub: () => PubSub.makeAtomicBounded(100),
-*     strategy: () => new PubSub.BackPressureStrategy()
-*   })
-*
-*   // Use the created PubSub
-*   const published = yield* PubSub.publish(pubsub, "Hello")
-*   yield* PubSub.shutdown(pubsub)
-*   return published
-* })
-*
-* const actual = await Effect.runPromise(program)
-* actual // => true
-* ```
-*
-* @stability stable
-* @category constructors
-* @since 4.0.0
-*/
-const make = (options) => sync(() => makePubSubUnsafe(options.atomicPubSub(), /* @__PURE__ */ new Map(), makeUnsafe$3(), makeUnsafe(false), make$1(false), options.strategy(), make$1(none())));
-/**
-* Creates an unbounded `PubSub`.
-*
-* **Example** (Creating an unbounded PubSub)
-*
-* ```ts import.meta.vitest
-* import { Effect, PubSub } from "effect"
-*
-* const program = Effect.scoped(Effect.gen(function*() {
-*   // Create unbounded PubSub
-*   const pubsub = yield* PubSub.unbounded<string>()
-*
-*   const subscription = yield* PubSub.subscribe(pubsub)
-*
-*   // Can publish unlimited messages
-*   for (let i = 0; i < 3; i++) {
-*     yield* PubSub.publish(pubsub, `message-${i}`)
-*   }
-*
-*   return yield* PubSub.takeAll(subscription)
-* }))
-*
-* const actual = await Effect.runPromise(program)
-* actual // => ["message-0", "message-1", "message-2"]
-* ```
-*
-* @stability stable
-* @category constructors
-* @since 2.0.0
-*/
-const unbounded = (options) => make({
-	atomicPubSub: () => makeAtomicUnbounded(options),
-	strategy: () => new DroppingStrategy()
-});
-/**
-* Creates an unbounded atomic PubSub implementation with optional replay buffer.
-*
-* **When to use**
-*
-* Use to create the low-level storage layer for a custom `PubSub` whose active
-* subscribers may retain an unbounded number of pending messages.
-*
-* **Gotchas**
-*
-* Messages published while subscribers are active can be retained without a
-* capacity limit until those subscribers take them or unsubscribe.
-*
-* @see {@link makeAtomicBounded} for a bounded atomic implementation that enforces capacity
-* @see {@link make} for wrapping an atomic implementation with a delivery strategy
-* @see {@link unbounded} for the high-level effectful constructor for unbounded `PubSub` values
-*
-* @stability stable
-* @category constructors
-* @since 4.0.0
-*/
-const makeAtomicUnbounded = (options) => {
-	const replay = options?.replay;
-	return new UnboundedPubSub(replay && replay > 0 ? new ReplayBuffer(Math.ceil(replay)) : void 0);
-};
-/**
-* Shuts down the `PubSub`, interrupting suspended publishers and subscribers
-* and finalizing active subscriptions.
-*
-* **Details**
-*
-* After shutdown, `publish` and `publishAll` succeed with `false`,
-* `publishUnsafe` returns `false`, and subscription operations such as `take`
-* interrupt.
-*
-* **Example** (Shutting down a PubSub)
-*
-* ```ts import.meta.vitest
-* import { Effect, PubSub } from "effect"
-*
-* const program = Effect.gen(function*() {
-*   const pubsub = yield* PubSub.bounded<string>(1)
-*
-*   // Shutdown the PubSub
-*   yield* PubSub.shutdown(pubsub)
-*
-*   const isShutdown = yield* PubSub.isShutdown(pubsub)
-*
-*   // Publishing after shutdown returns false
-*   const published = yield* PubSub.publish(pubsub, "msg1")
-*   return { isShutdown, published }
-* })
-*
-* const actual = await Effect.runPromise(program)
-* actual // => { isShutdown: true, published: false }
-* ```
-*
-* @stability stable
-* @category lifecycle
-* @since 2.0.0
-*/
-const shutdown = (self) => uninterruptible(withFiber((fiber) => {
-	set(self.shutdownFlag, true);
-	return close(self.scope, interrupt$1(fiber.id)).pipe(andThen(self.strategy.shutdown), when(self.shutdownHook.open), asVoid);
-}));
-/**
-* Publishes a message to the `PubSub` as an `Effect`, returning whether the
-* message was accepted.
-*
-* **When to use**
-*
-* Use when you need to publish from effectful code and let the configured
-* PubSub strategy handle surplus messages.
-*
-* **Details**
-*
-* The effect succeeds with `false` if the `PubSub` is shut down. If the message
-* cannot be accepted immediately, the configured strategy decides how surplus
-* messages are handled.
-*
-* **Example** (Publishing a message)
-*
-* ```ts import.meta.vitest
-* import { Effect, PubSub } from "effect"
-*
-* const program = Effect.scoped(Effect.gen(function*() {
-*   const pubsub = yield* PubSub.bounded<string>(10)
-*
-*   // Publish a message
-*   const published = yield* PubSub.publish(pubsub, "Hello World")
-*
-*   const subscription = yield* PubSub.subscribe(pubsub)
-*
-*   yield* PubSub.publish(pubsub, "Hello")
-*   const message = yield* PubSub.take(subscription)
-*   return { published, message }
-* }))
-*
-* const actual = await Effect.runPromise(program)
-* actual // => { published: true, message: "Hello" }
-* ```
-*
-* @see {@link publishUnsafe} for a synchronous non-blocking attempt that does not run effectful surplus handling
-*
-* @stability stable
-* @category publishing
-* @since 2.0.0
-*/
-const publish = /*#__PURE__*/ dual(2, (self, value) => suspend(() => {
-	if (self.shutdownFlag.current || isSome(self.ended.current)) return succeed$1(false);
-	if (self.pubsub.publish(value)) {
-		self.strategy.completeSubscribersUnsafe(self.pubsub, self.subscribers);
-		return succeed$1(true);
-	}
-	return self.strategy.handleSurplus(self.pubsub, self.subscribers, [value], self.shutdownFlag, self.ended);
-}));
-/**
-* Subscribes to receive messages from the `PubSub`. The resulting subscription can
-* be evaluated multiple times within the scope to take a message from the `PubSub`
-* each time.
-*
-* **Example** (Subscribing to messages)
-*
-* ```ts import.meta.vitest
-* import { Effect, PubSub } from "effect"
-*
-* const program = Effect.gen(function*() {
-*   const pubsub = yield* PubSub.bounded<string>(10)
-*
-*   // Subscribe within a scope for automatic cleanup
-*   const first = yield* Effect.scoped(Effect.gen(function*() {
-*     const subscription = yield* PubSub.subscribe(pubsub)
-*
-*     // Publish some messages
-*     yield* PubSub.publish(pubsub, "Hello")
-*     yield* PubSub.publish(pubsub, "World")
-*
-*     // Take messages one by one
-*     const msg1 = yield* PubSub.take(subscription)
-*     const msg2 = yield* PubSub.take(subscription)
-*
-*     // Subscription is automatically cleaned up when scope exits
-*     return [msg1, msg2]
-*   }))
-*
-*   const second = yield* Effect.scoped(Effect.gen(function*() {
-*     const sub1 = yield* PubSub.subscribe(pubsub)
-*     const sub2 = yield* PubSub.subscribe(pubsub)
-*
-*     // Multiple subscribers can receive the same messages
-*     yield* PubSub.publish(pubsub, "Broadcast")
-*
-*     return yield* Effect.all([
-*       PubSub.take(sub1),
-*       PubSub.take(sub2)
-*     ])
-*   }))
-*   return [first, second]
-* })
-*
-* const actual = await Effect.runPromise(program)
-* actual // => [["Hello", "World"], ["Broadcast", "Broadcast"]]
-* ```
-*
-* @stability stable
-* @category subscriptions
-* @since 2.0.0
-*/
-const subscribe = (self) => uninterruptible(contextWith((services) => {
-	const localScope = get(services, Scope);
-	const scope = forkUnsafe(self.scope);
-	const subscription = makeSubscriptionUnsafe(self.pubsub, self.subscribers, self.strategy, self.ended);
-	return addFinalizer$1(scope, unsubscribe(subscription)).pipe(andThen(addFinalizerExit(localScope, (exit) => close(scope, exit))), as(subscription));
-}));
-const unsubscribe = (self) => uninterruptible(withFiber((state) => {
-	set(self.shutdownFlag, true);
-	return forEach(takeAll$1(self.pollers), (d) => interruptWith(d, state.id), {
-		discard: true,
-		concurrency: "unbounded"
-	}).pipe(tap(() => sync(() => {
-		self.subscribers.delete(self.subscription);
-		self.subscription.unsubscribe();
-		self.replayWindow.close();
-		self.strategy.onPubSubEmptySpaceUnsafe(self.pubsub, self.subscribers);
-	})), when(self.shutdownHook.open), asVoid);
-}));
-/**
-* Takes all available messages from the subscription, suspending if no items
-* are available.
-*
-* **Example** (Taking all available messages)
-*
-* ```ts import.meta.vitest
-* import { Effect, PubSub } from "effect"
-*
-* const program = Effect.scoped(Effect.gen(function*() {
-*   const pubsub = yield* PubSub.bounded<string>(10)
-*
-*   const subscription = yield* PubSub.subscribe(pubsub)
-*
-*   // Publish multiple messages
-*   yield* PubSub.publishAll(pubsub, ["msg1", "msg2", "msg3"])
-*
-*   // Take all available messages at once
-*   return yield* PubSub.takeAll(subscription)
-* }))
-*
-* const actual = await Effect.runPromise(program)
-* actual // => ["msg1", "msg2", "msg3"]
-* ```
-*
-* @stability stable
-* @category subscriptions
-* @since 4.0.0
-*/
-const takeAll = (self) => suspend(function loop(value) {
-	if (self.shutdownFlag.current) return interrupt;
-	let as = self.pollers.length === 0 ? self.subscription.pollUpTo(Number.POSITIVE_INFINITY) : [];
-	if (value) as = value.concat(as);
-	self.strategy.onPubSubEmptySpaceUnsafe(self.pubsub, self.subscribers);
-	if (self.replayWindow.remaining > 0) return succeed$1(self.replayWindow.takeAll().concat(as));
-	else if (!isArrayNonEmpty(as)) return flatMap(pollForItem(self), (item) => loop([item]));
-	return succeed$1(as);
-});
-const pollForItem = (self) => callback((resume) => {
-	if (self.shutdownFlag.current) return resume(interrupt);
-	if (isSome(self.ended.current)) {
-		const message = self.pollers.length === 0 ? self.subscription.poll() : Empty;
-		if (message !== Empty) {
-			self.strategy.onPubSubEmptySpaceUnsafe(self.pubsub, self.subscribers);
-			return resume(succeed$1(message));
-		}
-		return resume(succeed$1(self.ended.current.value));
-	}
-	const deferred = makeUnsafe$4();
-	let set = self.subscribers.get(self.subscription);
-	if (!set) {
-		set = /* @__PURE__ */ new Set();
-		self.subscribers.set(self.subscription, set);
-	}
-	set.add(self.pollers);
-	append(self.pollers, deferred);
-	self.strategy.completePollersUnsafe(self.pubsub, self.subscribers, self.subscription, self.pollers);
-	if (deferred.effect) return resume(deferred.effect);
-	deferred.resumes = [resume];
-	return sync(() => remove(self.pollers, deferred));
-});
-const AbsentValue = /*#__PURE__*/ Symbol.for("effect/PubSub/AbsentValue");
-const addSubscribers = (subscribers, subscription, pollers) => {
-	if (!subscribers.has(subscription)) subscribers.set(subscription, /* @__PURE__ */ new Set());
-	subscribers.get(subscription).add(pollers);
-};
-const removeSubscribers = (subscribers, subscription, pollers) => {
-	if (!subscribers.has(subscription)) return;
-	const set = subscribers.get(subscription);
-	set.delete(pollers);
-	if (set.size === 0) subscribers.delete(subscription);
-};
-const makeSubscriptionUnsafe = (pubsub, subscribers, strategy, ended) => new SubscriptionImpl(pubsub, subscribers, pubsub.subscribe(), make$2(), makeUnsafe(false), make$1(false), strategy, pubsub.replayWindow(), ended);
-var UnboundedPubSub = class {
-	publisherHead = {
-		value: AbsentValue,
-		replayIndex: void 0,
-		subscribers: 0,
-		next: null
-	};
-	publisherTail = this.publisherHead;
-	publisherIndex = 0;
-	subscribersIndex = 0;
-	capacity = Number.MAX_SAFE_INTEGER;
-	replayBuffer;
-	constructor(replayBuffer) {
-		this.replayBuffer = replayBuffer;
-	}
-	replayWindow() {
-		return this.replayBuffer ? new ReplayWindowImpl(this.replayBuffer) : emptyReplayWindow;
-	}
-	isEmpty() {
-		return this.publisherHead === this.publisherTail;
-	}
-	isFull() {
-		return false;
-	}
-	size() {
-		return this.publisherIndex - this.subscribersIndex;
-	}
-	publish(value) {
-		const replayIndex = this.replayBuffer?.offer(value);
-		const subscribers = this.publisherTail.subscribers;
-		if (subscribers !== 0) {
-			const node = {
-				value,
-				replayIndex,
-				subscribers,
-				next: null
-			};
-			this.publisherTail.next = node;
-			this.publisherTail = this.publisherTail.next;
-			this.publisherIndex += 1;
-		}
-		return true;
-	}
-	publishAll(elements) {
-		if (this.publisherTail.subscribers !== 0) for (const a of elements) this.publish(a);
-		else if (this.replayBuffer) this.replayBuffer.offerAll(elements);
-		return [];
-	}
-	slide() {
-		if (this.publisherHead !== this.publisherTail) {
-			const node = this.publisherHead.next;
-			const value = node.value;
-			this.publisherHead = this.publisherHead.next;
-			this.publisherHead.value = AbsentValue;
-			this.subscribersIndex += 1;
-			this.replayBuffer?.slide(value, node.replayIndex);
-		}
-	}
-	subscribe() {
-		this.publisherTail.subscribers += 1;
-		return new UnboundedPubSubSubscription(this, this.publisherTail, this.publisherIndex, false);
-	}
-};
-var UnboundedPubSubSubscription = class {
-	self;
-	subscriberHead;
-	subscriberIndex;
-	unsubscribed;
-	constructor(self, subscriberHead, subscriberIndex, unsubscribed) {
-		this.self = self;
-		this.subscriberHead = subscriberHead;
-		this.subscriberIndex = subscriberIndex;
-		this.unsubscribed = unsubscribed;
-	}
-	isEmpty() {
-		if (this.unsubscribed) return true;
-		let empty = true;
-		let loop = true;
-		while (loop) if (this.subscriberHead === this.self.publisherTail) loop = false;
-		else if (this.subscriberHead.next.value !== AbsentValue) {
-			empty = false;
-			loop = false;
-		} else {
-			this.subscriberHead = this.subscriberHead.next;
-			this.subscriberIndex += 1;
-		}
-		return empty;
-	}
-	size() {
-		if (this.unsubscribed) return 0;
-		return this.self.publisherIndex - Math.max(this.subscriberIndex, this.self.subscribersIndex);
-	}
-	poll() {
-		if (this.unsubscribed) return Empty;
-		let loop = true;
-		let polled = Empty;
-		while (loop) if (this.subscriberHead === this.self.publisherTail) loop = false;
-		else {
-			const elem = this.subscriberHead.next.value;
-			if (elem !== AbsentValue) {
-				polled = elem;
-				this.subscriberHead.subscribers -= 1;
-				if (this.subscriberHead.subscribers === 0) {
-					this.self.publisherHead = this.self.publisherHead.next;
-					this.self.publisherHead.value = AbsentValue;
-					this.self.subscribersIndex += 1;
-				}
-				loop = false;
-			}
-			this.subscriberHead = this.subscriberHead.next;
-			this.subscriberIndex += 1;
-		}
-		return polled;
-	}
-	pollUpTo(n) {
-		n = normalize$1(n);
-		const builder = [];
-		let i = 0;
-		while (i !== n) {
-			const a = this.poll();
-			if (a === Empty) i = n;
-			else {
-				builder.push(a);
-				i += 1;
-			}
-		}
-		return builder;
-	}
-	unsubscribe() {
-		if (!this.unsubscribed) {
-			this.unsubscribed = true;
-			this.self.publisherTail.subscribers -= 1;
-			while (this.subscriberHead !== this.self.publisherTail) {
-				if (this.subscriberHead.next.value !== AbsentValue) {
-					this.subscriberHead.subscribers -= 1;
-					if (this.subscriberHead.subscribers === 0) {
-						this.self.publisherHead = this.self.publisherHead.next;
-						this.self.publisherHead.value = AbsentValue;
-						this.self.subscribersIndex += 1;
-					}
-				}
-				this.subscriberHead = this.subscriberHead.next;
-			}
-		}
-	}
-};
-var SubscriptionImpl = class {
-	[SubscriptionTypeId] = { _A: identity };
-	pubsub;
-	subscribers;
-	subscription;
-	pollers;
-	shutdownHook;
-	shutdownFlag;
-	strategy;
-	replayWindow;
-	ended;
-	constructor(pubsub, subscribers, subscription, pollers, shutdownHook, shutdownFlag, strategy, replayWindow, ended) {
-		this.pubsub = pubsub;
-		this.subscribers = subscribers;
-		this.subscription = subscription;
-		this.pollers = pollers;
-		this.shutdownHook = shutdownHook;
-		this.shutdownFlag = shutdownFlag;
-		this.strategy = strategy;
-		this.replayWindow = replayWindow;
-		this.ended = ended;
-	}
-	pipe() {
-		return pipeArguments(this, arguments);
-	}
-};
-var PubSubImpl = class {
-	[TypeId$2] = { _A: identity };
-	pubsub;
-	subscribers;
-	scope;
-	shutdownHook;
-	shutdownFlag;
-	strategy;
-	ended;
-	constructor(pubsub, subscribers, scope, shutdownHook, shutdownFlag, strategy, ended) {
-		this.pubsub = pubsub;
-		this.subscribers = subscribers;
-		this.scope = scope;
-		this.shutdownHook = shutdownHook;
-		this.shutdownFlag = shutdownFlag;
-		this.strategy = strategy;
-		this.ended = ended;
-	}
-	pipe() {
-		return pipeArguments(this, arguments);
-	}
-};
-const makePubSubUnsafe = (pubsub, subscribers, scope, shutdownHook, shutdownFlag, strategy, ended) => new PubSubImpl(pubsub, subscribers, scope, shutdownHook, shutdownFlag, strategy, ended);
-/**
-* Represents the dropping strategy for bounded `PubSub` values.
-*
-* **When to use**
-*
-* Use to keep publishers fast by dropping new messages when the `PubSub` is at
-* capacity.
-*
-* **Details**
-*
-* A publish that arrives while the `PubSub` is full is dropped instead of
-* waiting for capacity.
-*
-* **Gotchas**
-*
-* Subscribers may miss messages published while they are subscribed.
-*
-* **Example** (Applying a dropping strategy)
-*
-* ```ts import.meta.vitest
-* import { Effect, PubSub } from "effect"
-*
-* const program = Effect.scoped(Effect.gen(function*() {
-*   // Explicitly create a PubSub with a dropping strategy
-*   const pubsub = yield* PubSub.make<string>({
-*     atomicPubSub: () => PubSub.makeAtomicBounded(2),
-*     strategy: () => new PubSub.DroppingStrategy()
-*   })
-*
-*   const subscription = yield* PubSub.subscribe(pubsub)
-*
-*   // Fill the PubSub
-*   const pub1 = yield* PubSub.publish(pubsub, "msg1") // true
-*   const pub2 = yield* PubSub.publish(pubsub, "msg2") // true
-*   const pub3 = yield* PubSub.publish(pubsub, "msg3") // false (dropped)
-*
-*   // Subscribers will only see the first two messages
-*   const messages = yield* PubSub.takeAll(subscription)
-*   return { published: [pub1, pub2, pub3], messages }
-* }))
-*
-* const actual = await Effect.runPromise(program)
-* actual // => { published: [true, true, false], messages: ["msg1", "msg2"] }
-* ```
-*
-* @stability stable
-* @category models
-* @since 4.0.0
-*/
-var DroppingStrategy = class {
-	get shutdown() {
-		return void_;
-	}
-	handleSurplus(_pubsub, _subscribers, _elements, _isShutdown) {
-		return succeed$1(false);
-	}
-	onPubSubEmptySpaceUnsafe(_pubsub, _subscribers) {}
-	completePollersUnsafe(pubsub, subscribers, subscription, pollers) {
-		return strategyCompletePollersUnsafe(this, pubsub, subscribers, subscription, pollers);
-	}
-	completeSubscribersUnsafe(pubsub, subscribers) {
-		return strategyCompleteSubscribersUnsafe(this, pubsub, subscribers);
-	}
-};
-const strategyCompletePollersUnsafe = (strategy, pubsub, subscribers, subscription, pollers) => {
-	let keepPolling = true;
-	while (keepPolling && !subscription.isEmpty()) {
-		const poller = take(pollers);
-		if (poller === Empty) {
-			removeSubscribers(subscribers, subscription, pollers);
-			if (pollers.length === 0) keepPolling = false;
-			else addSubscribers(subscribers, subscription, pollers);
-		} else {
-			const pollResult = subscription.poll();
-			if (pollResult === Empty) prepend(pollers, poller);
-			else {
-				doneUnsafe(poller, succeed$2(pollResult));
-				strategy.onPubSubEmptySpaceUnsafe(pubsub, subscribers);
-			}
-		}
-	}
-};
-const strategyCompleteSubscribersUnsafe = (strategy, pubsub, subscribers) => {
-	for (const [subscription, pollersSet] of subscribers) for (const pollers of pollersSet) strategy.completePollersUnsafe(pubsub, subscribers, subscription, pollers);
-};
-var ReplayBuffer = class {
-	capacity;
-	head = {
-		value: AbsentValue,
-		index: 0,
-		next: null
-	};
-	tail = this.head;
-	slideValues = [];
-	size = 0;
-	index = 0;
-	publisherIndex = 0;
-	constructor(capacity) {
-		this.capacity = capacity;
-	}
-	slide(value, publisherIndex) {
-		this.slideValues[this.index % this.capacity] = {
-			value,
-			index: publisherIndex
-		};
-		this.index++;
-	}
-	offer(a) {
-		const index = this.publisherIndex++;
-		this.tail.value = a;
-		this.tail.index = index;
-		this.tail.next = {
-			value: AbsentValue,
-			index: 0,
-			next: null
-		};
-		this.tail = this.tail.next;
-		if (this.size === this.capacity) {
-			const dropped = this.head;
-			this.head = dropped.next;
-			dropped.next = null;
-			dropped.value = AbsentValue;
-		} else this.size += 1;
-		return index;
-	}
-	offerAll(as) {
-		for (const a of as) this.offer(a);
-	}
-};
-var ReplayWindowImpl = class {
-	buffer;
-	values;
-	index = 0;
-	remaining;
-	slideIndex;
-	newestIndex = -1;
-	constructor(buffer) {
-		this.buffer = buffer;
-		this.remaining = buffer.size;
-		this.slideIndex = buffer.index;
-		this.values = new Array(this.remaining);
-		let node = buffer.head;
-		for (let i = 0; i < this.remaining; i++) {
-			this.values[i] = node.value;
-			this.newestIndex = node.index;
-			node = node.next;
-		}
-	}
-	close() {
-		this.values.length = 0;
-		this.remaining = 0;
-	}
-	sync() {
-		const slides = this.buffer.index - this.slideIndex;
-		if (slides === 0 || this.remaining === 0) return;
-		const count = Math.min(slides, this.buffer.capacity);
-		const start = this.buffer.index - count;
-		for (let i = 0; i < count; i++) {
-			const entry = this.buffer.slideValues[(start + i) % this.buffer.capacity];
-			if (entry.index > this.newestIndex) {
-				this.index = (this.index + 1) % this.values.length;
-				this.values[(this.index + this.remaining - 1) % this.values.length] = entry.value;
-				this.newestIndex = entry.index;
-			}
-		}
-		this.slideIndex = this.buffer.index;
-	}
-	take() {
-		if (this.remaining === 0) return;
-		this.sync();
-		const value = this.values[this.index];
-		this.values[this.index] = AbsentValue;
-		this.index = (this.index + 1) % this.values.length;
-		this.remaining--;
-		if (this.remaining === 0) this.close();
-		return value;
-	}
-	takeN(n) {
-		n = normalize$1(n);
-		const len = Math.min(n, this.remaining);
-		const items = new Array(len);
-		for (let i = 0; i < len; i++) items[i] = this.take();
-		return items;
-	}
-	takeAll() {
-		return this.takeN(this.remaining);
-	}
-};
-const emptyReplayWindow = {
-	remaining: 0,
-	take: () => void 0,
-	takeN: () => [],
-	takeAll: () => [],
-	close: () => void 0
-};
-const ChannelProto = {
-	["~effect/Channel"]: {
-		_Env: identity,
-		_InErr: identity,
-		_InElem: identity,
-		_OutErr: identity,
-		_OutElem: identity
-	},
-	pipe() {
-		return pipeArguments(this, arguments);
-	}
-};
-/**
-* Creates a `Channel` from a transformation function that operates on upstream pulls.
-*
-* **Example** (Creating channels from transforms)
-*
-* ```ts import.meta.vitest
-* import { Channel, Effect } from "effect"
-*
-* const channel = Channel.fromTransform((upstream, scope) =>
-*   Effect.succeed(upstream)
-* )
-* await Effect.runPromise(Channel.runCollect(channel)) // => []
-* ```
-*
-* @stability stable
-* @category constructors
-* @since 4.0.0
-*/
-const fromTransform = (transform) => {
-	const self = Object.create(ChannelProto);
-	self.transform = (upstream, scope) => catchCause(transform(upstream, scope), (cause) => succeed$1(failCause(cause)));
-	return self;
-};
-/**
-* Creates a `Channel` from an `Effect` that produces a `Pull`.
-*
-* **Example** (Creating channels from pulls)
-*
-* ```ts import.meta.vitest
-* import { Cause, Channel, Effect } from "effect"
-*
-* const channel = Channel.fromPull(Effect.sync(() => {
-*   let emitted = false
-*   return Effect.suspend(() => {
-*     if (emitted) return Cause.done()
-*     emitted = true
-*     return Effect.succeed(42)
-*   })
-* }))
-* await Effect.runPromise(Channel.runCollect(channel)) // => [42]
-* ```
-*
-* @stability stable
-* @category constructors
-* @since 4.0.0
-*/
-const fromPull = (effect) => fromTransform((_, __) => effect);
-/**
-* Converts a `Channel` back to its underlying transformation function.
-*
-* **Example** (Extracting channel transforms)
-*
-* ```ts import.meta.vitest
-* import { Channel, Effect } from "effect"
-*
-* const channel = Channel.succeed(42)
-* const transform = Channel.toTransform(channel)
-* typeof transform // => "function"
-* Effect.runSync(Channel.runCollect(channel)) // => [42]
-* ```
-*
-* @stability stable
-* @category destructors
-* @since 4.0.0
-*/
-const toTransform = (channel) => channel.transform;
-/**
-* Creates a channel from a PubSub subscription that outputs arrays of values.
-*
-* **Details**
-*
-* This constructor creates a channel that reads from a PubSub subscription and outputs
-* arrays of values in chunks. It's useful when you want to process multiple values at once
-* for better performance.
-*
-* **Example** (Batching subscription values)
-*
-* ```ts import.meta.vitest
-* import { Channel, Data, Effect, Option, PubSub } from "effect"
-*
-* class StreamError extends Data.TaggedError("StreamError")<{
-*   readonly message: string
-* }> {}
-*
-* const program = Effect.gen(function*() {
-*   const pubsub = yield* PubSub.bounded<number>(16)
-*   const subscription = yield* PubSub.subscribe(pubsub)
-*
-*   // Create a channel that reads arrays of values
-*   const channel = Channel.fromSubscriptionArray(subscription)
-*
-*   // Publish some values
-*   yield* PubSub.publish(pubsub, 1)
-*   yield* PubSub.publish(pubsub, 2)
-*   yield* PubSub.publish(pubsub, 3)
-*   yield* PubSub.publish(pubsub, 4)
-*
-*   // The channel will output arrays like [1, 2, 3] and [4]
-*   return channel
-* })
-* const result = Effect.scoped(Effect.flatMap(program, Channel.runHead))
-* await Effect.runPromise(result) // => Option.some([1, 2, 3, 4])
-* ```
-*
-* **Example** (Processing subscription values in batches)
-*
-* ```ts import.meta.vitest
-* import { Channel, Data, Effect, Option, PubSub } from "effect"
-*
-* class BatchProcessingError extends Data.TaggedError("BatchProcessingError")<{
-*   readonly reason: string
-* }> {}
-*
-* const batchProcessor = Effect.gen(function*() {
-*   const pubsub = yield* PubSub.bounded<string>(32)
-*   const subscription = yield* PubSub.subscribe(pubsub)
-*
-*   // Create a channel that processes items in batches
-*   const batchChannel = Channel.fromSubscriptionArray(subscription)
-*
-*   // Transform to process each batch
-*   const processedChannel = Channel.map(batchChannel, (batch) =>
-*     batch.map((item) => item.toUpperCase())
-*   )
-*
-*   yield* PubSub.publishAll(pubsub, ["one", "two"])
-*   return processedChannel
-* })
-* const batch = Effect.scoped(Effect.flatMap(batchProcessor, Channel.runHead))
-* await Effect.runPromise(batch) // => Option.some(["ONE", "TWO"])
-* ```
-*
-* **Example** (Aggregating subscription metrics)
-*
-* ```ts import.meta.vitest
-* import { Channel, Effect, Option, PubSub } from "effect"
-*
-* const metricsAggregator = Effect.gen(function*() {
-*   const metricsPubSub = yield* PubSub.bounded<
-*     { timestamp: number; value: number }
-*   >(100)
-*   const subscription = yield* PubSub.subscribe(metricsPubSub)
-*
-*   // Create a channel that collects metrics in chunks
-*   const metricsChannel = Channel.fromSubscriptionArray(subscription)
-*
-*   // Transform to calculate aggregate statistics
-*   const aggregatedChannel = Channel.map(metricsChannel, (metrics) => {
-*     const values = metrics.map((m) => m.value)
-*     const sum = values.reduce((a, b) => a + b, 0)
-*     const avg = sum / values.length
-*     const min = Math.min(...values)
-*     const max = Math.max(...values)
-*
-*     return {
-*       count: values.length,
-*       sum,
-*       average: avg,
-*       min,
-*       max,
-*       firstTimestamp: Math.min(...metrics.map((m) => m.timestamp)),
-*       lastTimestamp: Math.max(...metrics.map((m) => m.timestamp))
-*     }
-*   })
-*
-*   yield* PubSub.publish(metricsPubSub, { timestamp: 1, value: 10 })
-*   return aggregatedChannel
-* })
-* const metric = Effect.scoped(Effect.flatMap(metricsAggregator, Channel.runHead))
-* const result = await Effect.runPromise(metric)
-* Option.map(result, ({ count, sum, average, min, max }) => ({ count, sum, average, min, max })) // => Option.some({ count: 1, sum: 10, average: 10, min: 10, max: 10 })
-* ```
-*
-* @stability stable
-* @category constructors
-* @since 4.0.0
-*/
-const fromSubscriptionArray = (subscription) => fromPull(succeed$1(onInterrupt(takeAll(subscription), () => done$1())));
-/**
-* Creates a channel from a PubSub that outputs arrays of values.
-*
-* **Details**
-*
-* This constructor creates a channel that reads from a PubSub by automatically
-* subscribing to it and collecting values into arrays. The channel outputs
-* arrays of values in chunks, making it ideal for batch processing scenarios.
-*
-* **Example** (Batching PubSub values)
-*
-* ```ts import.meta.vitest
-* import { Channel, Data, Effect, Option, PubSub } from "effect"
-*
-* class BatchError extends Data.TaggedError("BatchError")<{
-*   readonly message: string
-* }> {}
-*
-* const program = Effect.gen(function*() {
-*   const pubsub = yield* PubSub.unbounded<number>({ replay: 4 })
-*
-*   // Create a channel that reads arrays of values
-*   const channel = Channel.fromPubSubArray(pubsub)
-*
-*   // Publish some values
-*   yield* PubSub.publish(pubsub, 1)
-*   yield* PubSub.publish(pubsub, 2)
-*   yield* PubSub.publish(pubsub, 3)
-*   yield* PubSub.publish(pubsub, 4)
-*
-*   // The channel will output arrays like [1, 2, 3] and [4]
-*   return channel
-* })
-* const result = Effect.scoped(Effect.flatMap(program, Channel.runHead))
-* await Effect.runPromise(result) // => Option.some([1, 2, 3, 4])
-* ```
-*
-* **Example** (Processing PubSub orders in batches)
-*
-* ```ts import.meta.vitest
-* import { Channel, Effect, Option, PubSub } from "effect"
-*
-* interface Order {
-*   readonly id: string
-*   readonly customerId: string
-*   readonly items: ReadonlyArray<string>
-*   readonly total: number
-*   readonly submittedAt: number
-* }
-*
-* const orderBatchProcessor = Effect.gen(function*() {
-*   const orderPubSub = yield* PubSub.unbounded<Order>({ replay: 1 })
-*
-*   // Create a channel that processes orders in batches
-*   const orderChannel = Channel.fromPubSubArray(orderPubSub)
-*
-*   // Transform to process each batch of orders
-*   const processedChannel = Channel.map(orderChannel, (orderBatch) => {
-*     const totalRevenue = orderBatch.reduce((sum, order) => sum + order.total, 0)
-*     const customerCount = new Set(orderBatch.map((order) =>
-*       order.customerId
-*     )).size
-*
-*     return {
-*       batchSize: orderBatch.length,
-*       totalRevenue,
-*       uniqueCustomers: customerCount,
-*       firstSubmittedAt: Math.min(...orderBatch.map((order) => order.submittedAt)),
-*       orders: orderBatch
-*     }
-*   })
-*
-*   yield* PubSub.publish(orderPubSub, {
-*     id: "1", customerId: "a", items: ["book"], total: 10, submittedAt: 1
-*   })
-*   return processedChannel
-* })
-* const order = Effect.scoped(Effect.flatMap(orderBatchProcessor, Channel.runHead))
-* const result = await Effect.runPromise(order)
-* Option.map(result, (batch) => [batch.batchSize, batch.totalRevenue, batch.uniqueCustomers]) // => Option.some([1, 10, 1])
-* ```
-*
-* **Example** (Processing PubSub logs in batches)
-*
-* ```ts import.meta.vitest
-* import { Channel, Effect, Option, PubSub } from "effect"
-*
-* interface LogEntry {
-*   readonly timestamp: number
-*   readonly level: "info" | "warn" | "error"
-*   readonly message: string
-*   readonly source: string
-* }
-*
-* const logAggregator = Effect.gen(function*() {
-*   const logPubSub = yield* PubSub.unbounded<LogEntry>({ replay: 1 })
-*
-*   // Create a channel that collects logs in batches
-*   const logChannel = Channel.fromPubSubArray(logPubSub)
-*
-*   // Transform to analyze log batches
-*   const analysisChannel = Channel.map(logChannel, (logBatch) => {
-*     const errorCount = logBatch.filter((log) => log.level === "error").length
-*     const warnCount = logBatch.filter((log) => log.level === "warn").length
-*     const infoCount = logBatch.filter((log) => log.level === "info").length
-*
-*     const timeRange = {
-*       start: Math.min(...logBatch.map((log) => log.timestamp)),
-*       end: Math.max(...logBatch.map((log) => log.timestamp))
-*     }
-*
-*     return {
-*       batchId: `${timeRange.start}-${timeRange.end}`,
-*       totalEntries: logBatch.length,
-*       errorCount,
-*       warnCount,
-*       infoCount,
-*       timeRange,
-*       sources: [...new Set(logBatch.map((log) => log.source))]
-*     }
-*   })
-*
-*   yield* PubSub.publish(logPubSub, {
-*     timestamp: 1,
-*     level: "info",
-*     message: "ready",
-*     source: "app"
-*   } satisfies LogEntry)
-*   return analysisChannel
-* })
-* const log = Effect.scoped(Effect.flatMap(logAggregator, Channel.runHead))
-* const result = await Effect.runPromise(log)
-* Option.map(result, (batch) => [batch.batchId, batch.totalEntries, batch.infoCount]) // => Option.some(["1-1", 1, 1])
-* ```
-*
-* @stability stable
-* @category constructors
-* @since 4.0.0
-*/
-const fromPubSubArray = (pubsub) => unwrap(map(subscribe(pubsub), fromSubscriptionArray));
-/**
-* Constructs a `Channel` from a scoped effect that will result in a
-* `Channel` if successful.
-*
-* **Example** (Unwrapping channel effects)
-*
-* ```ts import.meta.vitest
-* import { Channel, Data, Effect } from "effect"
-*
-* class UnwrapError extends Data.TaggedError("UnwrapError")<{
-*   readonly reason: string
-* }> {}
-*
-* // Create an effect that produces a channel
-* const channelEffect = Effect.succeed(
-*   Channel.fromIterable([1, 2, 3])
-* )
-*
-* // Unwrap the effect to get the channel
-* const unwrappedChannel = Channel.unwrap(channelEffect)
-*
-* Effect.runSync(Channel.runCollect(unwrappedChannel)) // => [1, 2, 3]
-* ```
-*
-* @stability stable
-* @category constructors
-* @since 2.0.0
-*/
-const unwrap = (channel) => fromTransform((upstream, scope) => {
-	let pull;
-	return succeed$1(suspend(() => {
-		if (pull) return pull;
-		return channel.pipe(provide(scope), flatMap((channel) => toTransform(channel)(upstream, scope)), flatMap((pull_) => pull = pull_));
-	}));
-});
-// node_modules/.pnpm/effect@4.1.2/node_modules/effect/dist/internal/stream.js
-const TypeId = "~effect/Stream";
-const streamVariance = {
-	_R: identity,
-	_E: identity,
-	_A: identity
-};
-const Stream = function(channel) {
-	this.channel = channel;
-};
-Stream.prototype = {
-	[TypeId]: streamVariance,
-	pipe() {
-		return pipeArguments(this, arguments);
-	}
-};
-/** @internal */
-const fromChannel$1 = (channel) => new Stream(channel);
-// node_modules/.pnpm/effect@4.1.2/node_modules/effect/dist/Stream.js
-/**
-* Creates a stream from a array-emitting `Channel`.
-*
-* **Example** (Creating a stream from an array-emitting channel)
-*
-* ```ts import.meta.vitest
-* import { Channel, Effect, Stream } from "effect"
-*
-* const channel = Channel.succeed([1, 2, 3] as const)
-* const stream = Stream.fromChannel(channel)
-* await Effect.runPromise(Stream.runCollect(stream)) // => [1, 2, 3]
-* ```
-*
-* @stability stable
-* @category constructors
-* @since 2.0.0
-*/
-const fromChannel = fromChannel$1;
-/**
-* Creates a stream from a subscription to a `PubSub`.
-*
-* **Example** (Creating a stream from a subscription to a PubSub)
-*
-* ```ts import.meta.vitest
-* import { Effect, Fiber, PubSub, Stream } from "effect"
-*
-* const program = Effect.gen(function*() {
-*   const pubsub = yield* PubSub.unbounded<number>({ replay: 3 })
-*
-*   const fiber = yield* Stream.fromPubSub(pubsub).pipe(
-*     Stream.take(3),
-*     Stream.runCollect,
-*     Effect.forkChild
-*   )
-*
-*   yield* PubSub.publish(pubsub, 1)
-*   yield* PubSub.publish(pubsub, 2)
-*   yield* PubSub.publish(pubsub, 3)
-*
-*   const values = yield* Fiber.join(fiber)
-*   values // => [1, 2, 3]
-* })
-*
-* await Effect.runPromise(program)
-* ```
-*
-* @stability stable
-* @category constructors
-* @since 2.0.0
-*/
-const fromPubSub = (pubsub) => fromChannel(fromPubSubArray(pubsub));
 // src/git.ts
 /** A Git step failed. The message names the step, never raw command output. */
 var GitError = class extends Error {
@@ -15479,33 +12139,6 @@ const megabytes$1 = (bytes) => Math.max(1, Math.ceil(bytes / 1048576));
 /** An abandoned move frees its files after this long. */
 const TRANSFER_TTL_MS = 18e5;
 const isSafeRef = (ref) => /^refs\/[A-Za-z0-9._/-]+$/.test(ref) && !ref.includes("..");
-const JOURNAL_LIMIT = 30;
-/** A short record for the settings page. Titles and machine names only. */
-var Journal = class {
-	#file;
-	constructor(dataDirectory) {
-		this.#file = join(dataDirectory, "moves.jsonl");
-	}
-	async record(entry) {
-		await appendFile(this.#file, `${JSON.stringify({
-			...entry,
-			at: (/* @__PURE__ */ new Date()).toISOString()
-		})}\n`).then(async () => {
-			const entries = await this.read();
-			if (entries.length > 60) await writeFile(this.#file, entries.slice(0, JOURNAL_LIMIT).reverse().map((item) => `${JSON.stringify(item)}\n`).join(""));
-		}).catch(() => void 0);
-	}
-	/** Newest first. */
-	async read() {
-		return (await readFile(this.#file, "utf8").catch(() => "")).split("\n").flatMap((line) => {
-			try {
-				return line === "" ? [] : [JSON.parse(line)];
-			} catch {
-				return [];
-			}
-		}).reverse();
-	}
-};
 var Transfers = class {
 	transfers = /* @__PURE__ */ new Map();
 	root;
@@ -15547,11 +12180,9 @@ var Transfers = class {
 /** The environment a thread leaves. It changes nothing durable until `finish`. */
 var Source = class extends Transfers {
 	#host;
-	#journal;
-	constructor(host, dataDirectory, journal) {
+	constructor(host, dataDirectory) {
 		super(dataDirectory, "out");
 		this.#host = host;
-		this.#journal = journal;
 	}
 	running(state) {
 		return state.prepared !== void 0 && !state.settled;
@@ -15669,12 +12300,6 @@ var Source = class extends Transfers {
 			throw fromHost(error);
 		});
 		await this.drop(id);
-		await this.#journal.record({
-			direction: "out",
-			title: offer.title,
-			peer: movedTo.environmentLabel,
-			outcome: "Moved"
-		});
 	}
 	async abort(id) {
 		const state = this.transfers.get(id);
@@ -15685,11 +12310,9 @@ var Source = class extends Transfers {
 /** The environment a thread arrives on. A failure leaves no thread, branch or ref behind. */
 var Destination = class extends Transfers {
 	#host;
-	#journal;
-	constructor(host, dataDirectory, journal) {
+	constructor(host, dataDirectory) {
 		super(dataDirectory, "in");
 		this.#host = host;
-		this.#journal = journal;
 	}
 	running(state) {
 		return state.importing !== void 0 && !state.settled;
@@ -15772,12 +12395,6 @@ var Destination = class extends Transfers {
 			});
 			if (manifest.branch !== null && manifest.branch !== received.branch) warnings.push(`The branch ${manifest.branch} already holds other work on this machine, so the thread uses ${received.branch}.`);
 			if (manifest.omittedMessages > 0) warnings.push(`${manifest.omittedMessages} older messages were not copied. The archived original keeps them.`);
-			await this.#journal.record({
-				direction: "in",
-				title: offer.title,
-				peer: offer.source.environmentLabel,
-				outcome: "Moved"
-			});
 			return {
 				thread: {
 					environmentId: imported.environmentId,
@@ -16068,9 +12685,11 @@ function createCarryCommands(source, destination) {
 	};
 }
 // src/config.ts
-/** Lets a provisioning tool set the key before the server starts, with no client involved. */
+/**
+* The only way to allow pulls from a machine. Whoever starts the server sets it, such as a
+* tool that provisions a sandbox, so the plugin needs no settings of its own.
+*/
 const TRANSFER_KEY_VARIABLE = "T3_REHOME_TRANSFER_KEY";
-const SOURCE_NAME = /^[a-z][a-z0-9-]{0,40}$/;
 /** A T3 server origin, without a path: the plugin adds its own. */
 function normalizeSourceUrl(value) {
 	let parsed;
@@ -16082,91 +12701,20 @@ function normalizeSourceUrl(value) {
 	if (parsed.protocol !== "http:" && parsed.protocol !== "https:" || parsed.username !== "") throw new MoveError("invalid", "The source address must start with http:// or https://.");
 	return parsed.origin;
 }
-var Config = class {
-	#file;
-	#secrets;
-	#environment;
-	constructor(dataDirectory, secrets, environment = process.env) {
-		this.#file = join(dataDirectory, "sources.json");
-		this.#secrets = secrets;
-		this.#environment = environment;
-	}
-	/** Null means other environments cannot pull threads from this one. */
-	async transferKey() {
-		const provisioned = this.#environment[TRANSFER_KEY_VARIABLE]?.trim();
-		if (provisioned) return {
-			key: provisioned,
-			from: "environment"
-		};
-		const saved = await this.#secrets.get("transfer-key");
-		return saved ? {
-			key: saved,
-			from: "settings"
-		} : null;
-	}
-	async createKey() {
-		const key = randomBytes(32).toString("base64url");
-		await this.#secrets.set("transfer-key", key);
-		return key;
-	}
-	async removeKey() {
-		await this.#secrets.remove("transfer-key");
-	}
-	/** Compares digests so neither length nor content leaks through timing. */
-	async accepts(presented) {
-		const expected = await this.transferKey();
-		if (expected === null) return "disabled";
-		const digest = (value) => createHash("sha256").update(value).digest();
-		return presented !== null && timingSafeEqual(digest(presented), digest(expected.key)) ? "ok" : "wrong";
-	}
-	async sources() {
-		const text = await readFile(this.#file, "utf8").catch(() => "[]");
-		try {
-			const parsed = JSON.parse(text);
-			return Array.isArray(parsed) ? parsed.flatMap((item) => typeof item === "object" && item !== null && "name" in item && "url" in item && typeof item.name === "string" && typeof item.url === "string" ? [{
-				name: item.name,
-				url: item.url
-			}] : []) : [];
-		} catch {
-			return [];
-		}
-	}
-	async saveSource(input) {
-		const name = input.name.trim();
-		if (!SOURCE_NAME.test(name)) throw new MoveError("invalid", "Name the source with lowercase letters, digits and hyphens, starting with a letter.");
-		if (input.key.trim() === "") throw new MoveError("invalid", "Enter the source's transfer key.");
-		const url = normalizeSourceUrl(input.url);
-		await this.#secrets.set(`source-${name}`, input.key.trim());
-		const others = (await this.sources()).filter((source) => source.name !== name);
-		await writeFile(this.#file, JSON.stringify([...others, {
-			name,
-			url
-		}], null, 2));
-	}
-	async removeSource(name) {
-		if (!SOURCE_NAME.test(name)) return;
-		await this.#secrets.remove(`source-${name}`);
-		const others = (await this.sources()).filter((source) => source.name !== name);
-		await writeFile(this.#file, JSON.stringify(others, null, 2));
-	}
-	/** A saved name keeps keys out of agent conversations; an inline pair suits another plugin. */
-	async resolve(source) {
-		if (typeof source === "string") {
-			const saved = (await this.sources()).find((candidate) => candidate.name === source);
-			const key = saved ? await this.#secrets.get(`source-${saved.name}`) : null;
-			if (!saved || key === null) throw new MoveError("invalid", `No saved source is named "${source}". Add it in Settings, Extensions, Rehome.`);
-			return {
-				url: saved.url,
-				key
-			};
-		}
-		if (typeof source === "object" && source !== null && "url" in source && "key" in source && typeof source.url === "string" && typeof source.key === "string" && source.key !== "") return {
-			url: normalizeSourceUrl(source.url),
-			key: source.key
-		};
-		throw new MoveError("invalid", "Pass \"source\" as a saved source name or as { url, key }.");
-	}
-};
+/** Compares digests so neither length nor content leaks through timing. */
+function checkTransferKey(presented, environment = process.env) {
+	const expected = environment[TRANSFER_KEY_VARIABLE]?.trim();
+	if (!expected) return "disabled";
+	const digest = (value) => createHash("sha256").update(value).digest();
+	return presented !== null && timingSafeEqual(digest(presented), digest(expected)) ? "ok" : "wrong";
+}
+function readPullSource(source) {
+	if (typeof source === "object" && source !== null && "url" in source && "key" in source && typeof source.url === "string" && typeof source.key === "string" && source.key !== "") return {
+		url: normalizeSourceUrl(source.url),
+		key: source.key
+	};
+	throw new MoveError("invalid", "Pass \"source\" as { url, key }.");
+}
 // src/pull.ts
 /** Where the host mounts this plugin's HTTP handler on every T3 server. */
 const HTTP_NAMESPACE = "/api/plugins/rehome";
@@ -16215,12 +12763,12 @@ async function body(request, schema) {
 * The source's side of a pull. The host gives this route no session, so every request must
 * carry the transfer key. Without a key configured, nothing can be pulled.
 */
-function createPullServer(source, config) {
+function createPullServer(source, environment = process.env) {
 	return async (request) => {
 		try {
 			const presented = /^Bearer (.+)$/.exec(request.headers.get("authorization") ?? "")?.[1];
-			const access = await config.accepts(presented ?? null);
-			if (access === "disabled") throw new MoveError("pull-disabled", "The source has no transfer key, so threads cannot be pulled from it. Create one in Settings, Extensions, Rehome on that machine.");
+			const access = checkTransferKey(presented ?? null, environment);
+			if (access === "disabled") throw new MoveError("pull-disabled", `The source has no transfer key, so threads cannot be pulled from it. Start its T3 server with ${TRANSFER_KEY_VARIABLE} set.`);
 			if (access === "wrong") throw new MoveError("unauthorized", "The source refused the transfer key.");
 			const route = new URL(request.url).pathname.split("/api/plugins/rehome")[1] ?? "";
 			if (request.method !== "POST") throw new MoveError("invalid", "Use POST.");
@@ -16255,20 +12803,16 @@ const JOB_LIMIT = 50;
 /** The destination's side of a pull: a background job a caller starts, then waits on. */
 var Puller = class {
 	#destination;
-	#config;
 	#fetch;
-	#onSettled;
 	#jobs = /* @__PURE__ */ new Map();
-	constructor(destination, config, options = {}) {
+	constructor(destination, options = {}) {
 		this.#destination = destination;
-		this.#config = config;
 		this.#fetch = options.fetch ?? fetch;
-		this.#onSettled = options.onSettled ?? (() => {});
 	}
 	/** Validates the request, then returns at once; the move continues in the background. */
 	async start(input) {
 		if (typeof input.threadId !== "string" || input.threadId === "") throw new MoveError("invalid", "Pass the source thread as \"threadId\".");
-		const source = await this.#config.resolve(input.source);
+		const source = readPullSource(input.source);
 		const moveId = randomUUID();
 		const job = {
 			status: {
@@ -16286,7 +12830,7 @@ var Puller = class {
 				state: "failed",
 				error: toFailure(error)
 			};
-		}).finally(this.#onSettled) });
+		}) });
 		this.#jobs.set(moveId, job);
 		for (const id of this.#jobs.keys()) {
 			if (this.#jobs.size <= JOB_LIMIT) break;
@@ -16378,9 +12922,11 @@ const VERSION = "0.1.0";
 const REQUIRED_CAPABILITIES = ["thread-details", "thread-portability"];
 /** A command is killed at 30 seconds, so a caller waits less and asks again. */
 const MAX_WAIT_MS = 2e4;
-const WHAT_TRAVELS = "Copies this thread to another machine: its conversation, its branch with commits that were never pushed, and its uncommitted changes, including new files. The thread is then archived here. Nothing is deleted.";
-const WHAT_STAYS = "Not copied: files Git ignores (such as .env, node_modules and build output), attachments, terminals and previews, and the provider's own session. The copy starts a new provider session that is given the conversation.";
-const MOVE_CONFIRMATION = `${WHAT_TRAVELS}\n\n${WHAT_STAYS}\n\nA running turn is stopped first.`;
+const MOVE_CONFIRMATION = [
+	"Copies this thread to another machine: its conversation, its branch with commits that were never pushed, and its uncommitted changes, including new files. The thread is then archived here. Nothing is deleted.",
+	"Not copied: files Git ignores (such as .env, node_modules and build output), attachments, terminals and previews, and the provider's own session. The copy starts a new provider session that is given the conversation.",
+	"A running turn is stopped first."
+].join("\n\n");
 /** Runs a host call and rejects with the host's user-facing reason. */
 async function hostCall(effect) {
 	const result$2 = await runPromise(result(effect));
@@ -16399,11 +12945,6 @@ function threadHost(context) {
 		archive: (input) => hostCall(threads.archive(input))
 	};
 }
-const secretStore = (context) => ({
-	get: (key) => hostCall(context.secrets.get(key)),
-	set: (key, value) => hostCall(context.secrets.set(key, value)),
-	remove: (key) => hostCall(context.secrets.remove(key))
-});
 const call = (operation, run) => tryPromise({
 	try: run,
 	catch: (cause) => new PluginError({
@@ -16411,104 +12952,6 @@ const call = (operation, run) => tryPromise({
 		cause
 	})
 });
-const text = (value) => typeof value === "string" ? value : "";
-async function settingsView(config, journal) {
-	const key = await config.transferKey();
-	const sources = await config.sources();
-	const moves = await journal.read();
-	return {
-		title: "Rehome",
-		blocks: [
-			{
-				id: "intro",
-				kind: "text",
-				text: `Move a thread to another machine from its details, next to the machine name. A move copies the conversation, the branch with commits that were never pushed, and the uncommitted changes, including new files. The original is then archived. Nothing is deleted.\n\n${WHAT_STAYS}\n\nBoth machines need Rehome and a project for the same repository. Threads with subagent threads cannot be moved yet.`
-			},
-			{
-				id: "pull",
-				kind: "text",
-				text: `Pulling moves a thread with no app in the middle: this machine connects to the source and copies the thread here. Use it when the source cannot reach this machine, such as a cloud sandbox. The source needs a transfer key, and this machine needs the source's address and that key.\n\nTransfer key on this machine: ${key === null ? "none. Other machines cannot pull threads from here." : key.from === "environment" ? `set by ${TRANSFER_KEY_VARIABLE}.` : "set. Anyone holding it can copy threads from this machine."}`
-			},
-			{
-				id: "key",
-				kind: "actions",
-				actions: [{
-					id: "create",
-					label: "Create a new transfer key",
-					command: "create-key",
-					input: {}
-				}, {
-					id: "remove",
-					label: "Remove the transfer key",
-					command: "remove-key",
-					input: {}
-				}]
-			},
-			{
-				id: "sources",
-				kind: "table",
-				columns: ["Source", "Address"],
-				rows: sources.map((source) => ({
-					id: source.name,
-					cells: [source.name, source.url],
-					actions: [{
-						id: "remove",
-						label: "Remove",
-						command: "remove-source",
-						input: { name: source.name }
-					}]
-				}))
-			},
-			{
-				id: "add-source",
-				kind: "form",
-				label: "Save a source to pull from",
-				command: "save-source",
-				input: {},
-				fields: [
-					{
-						name: "name",
-						label: "Name, such as sandbox",
-						kind: "text",
-						required: true
-					},
-					{
-						name: "url",
-						label: "Address of its T3 server, such as http://host:3773",
-						kind: "text",
-						required: true
-					},
-					{
-						name: "key",
-						label: "Its transfer key",
-						kind: "password",
-						required: true
-					}
-				]
-			},
-			{
-				id: "moves",
-				kind: "table",
-				columns: [
-					"When",
-					"Thread",
-					"Direction",
-					"Result"
-				],
-				rows: moves.map((move, index) => ({
-					id: `${move.at}-${index}`,
-					cells: [
-						move.at,
-						move.title,
-						move.direction === "in" ? `From ${move.peer}` : `To ${move.peer}`,
-						move.outcome
-					],
-					actions: []
-				}))
-			}
-		]
-	};
-}
 var plugin_default = {
 	apiVersion: 1,
 	id: "rehome",
@@ -16521,18 +12964,14 @@ var plugin_default = {
 			operation: "activate",
 			cause: /* @__PURE__ */ new Error(`This T3 Code server lacks: ${missing.join(", ")}`)
 		});
-		const changes = yield* unbounded();
-		const journal = new Journal(context.dataDirectory);
 		const host = threadHost(context);
-		const config = new Config(context.dataDirectory, secretStore(context));
-		const source = new Source(host, context.dataDirectory, journal);
-		const destination = new Destination(host, context.dataDirectory, journal);
-		const puller = new Puller(destination, config, { onSettled: () => void runPromise(publish(changes, void 0)) });
+		const source = new Source(host, context.dataDirectory);
+		const destination = new Destination(host, context.dataDirectory);
+		const puller = new Puller(destination);
 		yield* call("activate", async () => {
 			await source.reset();
 			await destination.reset();
 		});
-		yield* addFinalizer(() => shutdown(changes));
 		const carry = createCarryCommands(source, destination);
 		/** A carried step answers with its failure instead of throwing, so the user sees why. */
 		const step = (id, title) => ({
@@ -16552,21 +12991,13 @@ var plugin_default = {
 			ok: false,
 			error: toFailure(error)
 		})));
-		const waitFor = (input) => Math.min(MAX_WAIT_MS, Math.max(0, typeof input.waitMs === "number" ? input.waitMs : 0));
-		const setting = (id, title, run) => ({
-			id,
-			title,
-			description: title,
-			permission: "environment:maintain",
-			agent: false,
-			run: (input) => call(id, () => run(input))
-		});
+		const waitFor = (input, fallback) => Math.min(MAX_WAIT_MS, Math.max(0, typeof input.waitMs === "number" ? input.waitMs : fallback));
 		return {
 			commands: [
 				{
 					id: "pull",
 					title: "Pull a thread from another machine",
-					description: "Moves a thread from another T3 Code machine to this one, with its conversation, unpushed commits and uncommitted changes, then archives the original. Run it on the destination. Input: { threadId, source, waitMs? }. \"threadId\" is the thread on the source. \"source\" is the name of a source saved in Rehome's settings, or { url, key } with the source server's address and transfer key. Returns { ok: true, moveId, state: \"running\" | \"done\" | \"failed\", step, thread?, source?, warnings, error? }, or { ok: false, error: { code, message } } when the request is refused. The move continues in the background; it waits up to waitMs (default and maximum 20000) for it to finish. While state is \"running\", call \"status\" with the moveId.",
+					description: "Moves a thread from another T3 Code machine to this one, with its conversation, unpushed commits and uncommitted changes, then archives the original. Run it on the destination. Input: { threadId, source: { url, key }, waitMs? }. \"threadId\" is the thread on the source. \"source.url\" is the source server's address and \"source.key\" is the transfer key that server was started with. Returns { ok: true, moveId, state: \"running\" | \"done\" | \"failed\", step, thread?, source?, warnings, error? }, or { ok: false, error: { code, message } } when the request is refused. The move continues in the background; it waits up to waitMs (default and maximum 20000) for it to finish. While state is \"running\", call \"status\" with the moveId.",
 					permission: "orchestration:operate",
 					agent: true,
 					run: headless(async (input) => {
@@ -16574,7 +13005,7 @@ var plugin_default = {
 							threadId: input.threadId,
 							source: input.source
 						});
-						return { ...await puller.wait(moveId, input.waitMs === void 0 ? MAX_WAIT_MS : waitFor(input)) };
+						return { ...await puller.wait(moveId, waitFor(input, MAX_WAIT_MS)) };
 					})
 				},
 				{
@@ -16583,7 +13014,7 @@ var plugin_default = {
 					description: "Reads a move started by \"pull\" on this machine. Input: { moveId, waitMs? }. Returns the same object as \"pull\". Pass waitMs (up to 20000) to wait for the move to finish instead of asking again at once.",
 					permission: "orchestration:read",
 					agent: true,
-					run: headless(async (input) => ({ ...await puller.wait(input.moveId, waitFor(input)) }))
+					run: headless(async (input) => ({ ...await puller.wait(input.moveId, waitFor(input, 0)) }))
 				},
 				step("move", "Move a thread to another machine"),
 				step("accept", "Accept an incoming thread"),
@@ -16593,28 +13024,7 @@ var plugin_default = {
 				step("import", "Create the moved thread"),
 				step("finish", "Archive the original thread"),
 				step("abort", "Cancel an outgoing move"),
-				step("discard", "Cancel an incoming move"),
-				{ ...setting("create-key", "Create a new transfer key", async () => ({
-					$t3: "secret",
-					label: "Transfer key",
-					value: await config.createKey()
-				})) },
-				setting("remove-key", "Remove the transfer key", async () => {
-					await config.removeKey();
-					return null;
-				}),
-				setting("save-source", "Save a source to pull from", async (input) => {
-					await config.saveSource({
-						name: text(input.name),
-						url: text(input.url),
-						key: text(input.key)
-					});
-					return null;
-				}),
-				setting("remove-source", "Remove a saved source", async (input) => {
-					await config.removeSource(text(input.name));
-					return null;
-				})
+				step("discard", "Cancel an incoming move")
 			],
 			views: [{
 				id: "thread",
@@ -16639,16 +13049,9 @@ var plugin_default = {
 						}]
 					}]
 				})
-			}, {
-				id: "settings",
-				title: "Rehome",
-				location: "settings-page",
-				permission: "environment:maintain",
-				read: () => call("settings", () => settingsView(config, journal))
 			}],
-			handleHttp: (request) => call("http", () => createPullServer(source, config)(request)),
-			httpResponseTimeoutMs: 66e4,
-			changes: fromPubSub(changes)
+			handleHttp: (request) => call("http", () => createPullServer(source)(request)),
+			httpResponseTimeoutMs: 66e4
 		};
 	})
 };

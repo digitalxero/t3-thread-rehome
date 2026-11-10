@@ -67,22 +67,21 @@ so. Your existing branch is never rewritten.
 
 ## Pull, with no app in the middle
 
+The plugin has no settings. For people it is one button.
+
 The button carries the copy through the app you are using, so it works over any
 connection, including when the two machines cannot reach each other. A **pull**
-needs no app: the destination connects to the source and copies the thread. Use
-it from an agent or another plugin, or when the source cannot open connections
-to the destination, such as a cloud sandbox behind NAT.
+needs no app: the destination connects to the source and copies the thread. It
+is for an agent or another plugin, and for a source that cannot open
+connections to the destination, such as a cloud sandbox behind NAT.
 
-1. On the **source**, open **Settings → Extensions → Rehome** and create a
-   transfer key. A tool that provisions the machine can set
-   `T3_REHOME_TRANSFER_KEY` in the server's environment instead. Without a key,
-   nothing can be pulled from a machine.
-2. On the **destination**, save the source there: a name, the address of its T3
-   server, and the key. Or pass the address and key in the call.
-3. Run `pull` on the destination.
+A machine allows pulls only if its T3 server was started with
+`T3_REHOME_TRANSFER_KEY` set. The tool that provisions the machine chooses the
+key and later passes it, with the machine's address, to `pull` on the
+destination. Without the variable, nothing can be pulled from a machine.
 
-Anyone holding a transfer key can copy any thread from that machine. Treat it
-like a password, and remove it when you are done.
+Anyone holding the key can copy any thread from that machine. Treat it like a
+password and use a new one for each machine.
 
 ### Command contract
 
@@ -93,11 +92,15 @@ agents (`t3_plugin_run`, `t3_plugin_read`) and to other plugins
 **`pull`** (permission `orchestration:operate`)
 
 ```json
-{ "threadId": "<thread id on the source>", "source": "sandbox", "waitMs": 20000 }
+{
+  "threadId": "<thread id on the source>",
+  "source": { "url": "http://host:3773", "key": "<the source's transfer key>" },
+  "waitMs": 20000
+}
 ```
 
-`source` is a saved source's name, or `{ "url": "http://host:3773", "key": "…" }`.
-`waitMs` is optional, at most 20000, and defaults to 20000.
+`source.url` is the address of the source's T3 server. `waitMs` is optional, at
+most 20000, and defaults to 20000.
 
 **`status`** (permission `orchestration:read`)
 
@@ -153,13 +156,13 @@ plugin with id `rehome` and a `pull` command before calling it.
 
 ## How the two paths differ
 
-|                      | Button                             | Pull                                 |
-| -------------------- | ---------------------------------- | ------------------------------------ |
-| Who carries the copy | The app, in small steps            | The destination, over HTTP           |
-| Needs                | The app connected to both machines | The destination can reach the source |
-| Authentication       | Your session on each machine       | The source's transfer key            |
-| Size limit           | 64 MB of new work                  | 2 GB                                 |
-| Started from         | The source thread                  | The destination                      |
+|                      | Button                             | Pull                                   |
+| -------------------- | ---------------------------------- | -------------------------------------- |
+| Who carries the copy | The app, in small steps            | The destination, over HTTP             |
+| Needs                | The app connected to both machines | The destination can reach the source   |
+| Authentication       | Your session on each machine       | `T3_REHOME_TRANSFER_KEY` on the source |
+| Size limit           | 64 MB of new work                  | 2 GB                                   |
+| Started from         | The source thread                  | The destination                        |
 
 Neither path needs the source to open a connection to the destination.
 

@@ -22,7 +22,7 @@ try {
       .activate({
         id: plugin.id,
         dataDirectory: directory,
-        capabilities: ["thread-details", "thread-portability", "settings-pages"],
+        capabilities: ["thread-details", "thread-portability"],
         httpBasePath: "/api/plugins/rehome",
         httpBaseUrl: Effect.succeed("http://unused.invalid"),
         threads: {
@@ -42,7 +42,7 @@ try {
   );
   assert.deepEqual(
     contributions.views.map((view) => view.location),
-    ["thread-details", "settings-page"],
+    ["thread-details"],
   );
   for (const view of contributions.views)
     Schema.decodeUnknownSync(PluginView)(await Effect.runPromise(view.read()));

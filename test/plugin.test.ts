@@ -67,18 +67,11 @@ test("only the headless commands are open to agents, and every move needs operat
     finish: "orchestration:operate",
     abort: "orchestration:operate",
     discard: "orchestration:operate",
-    // The transfer key lets its holder copy threads from this machine.
-    "create-key": "environment:maintain",
-    "remove-key": "environment:maintain",
-    "save-source": "environment:maintain",
-    "remove-source": "environment:maintain",
   });
   assert.deepEqual(
     activated.success.views.map((view) => [view.id, view.location, view.permission]),
-    [
-      ["thread", "thread-details", "orchestration:operate"],
-      ["settings", "settings-page", "environment:maintain"],
-    ],
+    // The plugin is one button; it has no settings.
+    [["thread", "thread-details", "orchestration:operate"]],
   );
 });
 
@@ -102,10 +95,7 @@ test("the button asks where to move and says what stays behind, and failures com
   // A caller gets a reason it can act on, where a thrown error would tell it nothing.
   assert.deepEqual(await run("pull", { threadId: "thread", source: "unknown" }), {
     ok: false,
-    error: {
-      code: "invalid",
-      message: 'No saved source is named "unknown". Add it in Settings, Extensions, Rehome.',
-    },
+    error: { code: "invalid", message: 'Pass "source" as { url, key }.' },
   });
   assert.deepEqual(await run("status", { moveId: "missing" }), {
     ok: false,
@@ -116,8 +106,6 @@ test("the button asks where to move and says what stays behind, and failures com
     tone: "danger",
     text: "The host refused.",
   });
-  const key = await run("create-key", {});
-  assert.ok(typeof key === "object" && key !== null && "$t3" in key && key.$t3 === "secret");
 });
 
 test("it does not start on a host that cannot move threads", async (t) => {

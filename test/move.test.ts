@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
-import { mkdir, readdir, stat, writeFile } from "node:fs/promises";
+import { mkdir, readdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { test, type TestContext } from "node:test";
 import type { PluginInput } from "@t3tools/plugin-sdk";
 import { createCarryCommands } from "../src/carry.ts";
-import { Config, TRANSFER_KEY_VARIABLE } from "../src/config.ts";
+import { TRANSFER_KEY_VARIABLE, readPullSource } from "../src/config.ts";
 import { createBundle, listHaves, receiveBundle, settleWorktree } from "../src/git.ts";
-import { Destination, Journal, Source } from "../src/moves.ts";
+import { Destination, Source } from "../src/moves.ts";
 import { Puller, createPullServer, type PullStatus } from "../src/pull.ts";
 import {
   CONVERSATION,
@@ -27,9 +27,8 @@ const status = async (directory: string) =>
 
 async function machine(t: TestContext, host: ReturnType<typeof fakeHost>, data: string) {
   await mkdir(data, { recursive: true });
-  const journal = new Journal(data);
-  const source = new Source(host.host, data, journal);
-  const destination = new Destination(host.host, data, journal);
+  const source = new Source(host.host, data);
+  const destination = new Destination(host.host, data);
   return { ...host, data, source, destination, carry: createCarryCommands(source, destination) };
 }
 
@@ -277,24 +276,12 @@ async function pullWorld(t: TestContext, sourceKey: string | null) {
   const world = await twoMachines(t);
   const laptop = await machine(t, world.laptop, world.data("laptop"));
   const server = await machine(t, world.server, world.data("server"));
-  const secrets = () => {
-    const values = new Map<string, string>();
-    return {
-      get: async (key: string) => values.get(key) ?? null,
-      set: async (key: string, value: string) => void values.set(key, value),
-      remove: async (key: string) => void values.delete(key),
-    };
-  };
   const serve = createPullServer(
     laptop.source,
-    new Config(
-      laptop.data,
-      secrets(),
-      sourceKey === null ? {} : { [TRANSFER_KEY_VARIABLE]: sourceKey },
-    ),
+    sourceKey === null ? {} : { [TRANSFER_KEY_VARIABLE]: sourceKey },
   );
   const requests: string[] = [];
-  const puller = new Puller(server.destination, new Config(server.data, secrets(), {}), {
+  const puller = new Puller(server.destination, {
     // The server reaches the laptop; the laptop never opens a connection of its own.
     fetch: async (url, init) => {
       requests.push(new URL(String(url)).pathname);
@@ -358,25 +345,17 @@ for (const row of [
     assert.equal(server.threads.size, 0);
   });
 
-test("a pull names its source by a saved name, so no key passes through an agent", async (t) => {
-  const { server } = await pullWorld(t, "transfer-key");
-  const values = new Map<string, string>();
-  const config = new Config(
-    server.data,
-    {
-      get: async (key) => values.get(key) ?? null,
-      set: async (key, value) => void values.set(key, value),
-      remove: async (key) => void values.delete(key),
-    },
-    {},
-  );
-  await config.saveSource({ name: "sandbox", url: "http://sandbox:3773/some/path", key: "k" });
-  assert.deepEqual(await config.resolve("sandbox"), { url: "http://sandbox:3773", key: "k" });
-  assert.deepEqual(await config.sources(), [{ name: "sandbox", url: "http://sandbox:3773" }]);
-  await assert.rejects(config.resolve("unknown"), /No saved source/);
-  await assert.rejects(config.resolve({ url: "file:///etc/passwd", key: "k" }), /http/);
-  await config.removeSource("sandbox");
-  await assert.rejects(config.resolve("sandbox"), /No saved source/);
-  await writeFile(join(server.data, "sources.json"), "not json");
-  assert.deepEqual(await config.sources(), []);
+test("a pull source is a server address and its key, never a path or a file", () => {
+  assert.deepEqual(readPullSource({ url: "http://sandbox:3773/some/path", key: "k" }), {
+    url: "http://sandbox:3773",
+    key: "k",
+  });
+  for (const source of [
+    "sandbox",
+    { url: "http://sandbox:3773" },
+    { url: "http://sandbox:3773", key: "" },
+    { url: "file:///etc/passwd", key: "k" },
+    { url: "http://user@sandbox:3773", key: "k" },
+  ])
+    assert.throws(() => readPullSource(source), { code: "invalid" });
 });

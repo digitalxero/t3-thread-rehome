@@ -3,7 +3,12 @@ import { createReadStream, createWriteStream } from "node:fs";
 import { Readable, Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import * as Schema from "effect/Schema";
-import type { Config } from "./config.ts";
+import {
+  TRANSFER_KEY_VARIABLE,
+  checkTransferKey,
+  readPullSource,
+  type PullSource,
+} from "./config.ts";
 import {
   MoveError,
   Offer,
@@ -60,15 +65,18 @@ async function body<A>(request: Request, schema: Schema.Codec<A, unknown>): Prom
  * The source's side of a pull. The host gives this route no session, so every request must
  * carry the transfer key. Without a key configured, nothing can be pulled.
  */
-export function createPullServer(source: Source, config: Config) {
+export function createPullServer(
+  source: Source,
+  environment: Readonly<Record<string, string | undefined>> = process.env,
+) {
   return async (request: Request): Promise<Response> => {
     try {
       const presented = /^Bearer (.+)$/.exec(request.headers.get("authorization") ?? "")?.[1];
-      const access = await config.accepts(presented ?? null);
+      const access = checkTransferKey(presented ?? null, environment);
       if (access === "disabled")
         throw new MoveError(
           "pull-disabled",
-          "The source has no transfer key, so threads cannot be pulled from it. Create one in Settings, Extensions, Rehome on that machine.",
+          `The source has no transfer key, so threads cannot be pulled from it. Start its T3 server with ${TRANSFER_KEY_VARIABLE} set.`,
         );
       if (access === "wrong")
         throw new MoveError("unauthorized", "The source refused the transfer key.");
@@ -128,37 +136,27 @@ const JOB_LIMIT = 50;
 /** The destination's side of a pull: a background job a caller starts, then waits on. */
 export class Puller {
   readonly #destination: Destination;
-  readonly #config: Config;
   readonly #fetch: typeof fetch;
-  readonly #onSettled: () => void;
   readonly #jobs = new Map<string, PullJob>();
-  constructor(
-    destination: Destination,
-    config: Config,
-    options: { readonly fetch?: typeof fetch; readonly onSettled?: () => void } = {},
-  ) {
+  constructor(destination: Destination, options: { readonly fetch?: typeof fetch } = {}) {
     this.#destination = destination;
-    this.#config = config;
     this.#fetch = options.fetch ?? fetch;
-    this.#onSettled = options.onSettled ?? (() => {});
   }
 
   /** Validates the request, then returns at once; the move continues in the background. */
   async start(input: { readonly threadId: unknown; readonly source: unknown }): Promise<string> {
     if (typeof input.threadId !== "string" || input.threadId === "")
       throw new MoveError("invalid", 'Pass the source thread as "threadId".');
-    const source = await this.#config.resolve(input.source);
+    const source = readPullSource(input.source);
     const moveId = randomUUID();
     const job: PullJob = {
       status: { ok: true, moveId, state: "running", step: "offer", warnings: [] },
       settled: Promise.resolve(),
     };
     Object.assign(job, {
-      settled: this.#run(job, input.threadId, source)
-        .catch((error: unknown) => {
-          job.status = { ...job.status, state: "failed", error: toFailure(error) };
-        })
-        .finally(this.#onSettled),
+      settled: this.#run(job, input.threadId, source).catch((error: unknown) => {
+        job.status = { ...job.status, state: "failed", error: toFailure(error) };
+      }),
     });
     this.#jobs.set(moveId, job);
     for (const id of this.#jobs.keys()) {
@@ -187,7 +185,7 @@ export class Puller {
   }
 
   async #post(
-    source: { readonly url: string; readonly key: string },
+    source: PullSource,
     route: string,
     payload: unknown,
     timeoutMs: number,
@@ -219,11 +217,7 @@ export class Puller {
     );
   }
 
-  async #run(
-    job: PullJob,
-    threadId: string,
-    source: { readonly url: string; readonly key: string },
-  ): Promise<void> {
+  async #run(job: PullJob, threadId: string, source: PullSource): Promise<void> {
     const step = (next: PullStatus["step"]) => {
       job.status = { ...job.status, step: next };
     };
