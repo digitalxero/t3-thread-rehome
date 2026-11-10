@@ -12,8 +12,11 @@ saying where the work continues. Nothing is deleted, so a move that fails
 loses nothing.
 
 Requires the plugin host's `thread-details` and `thread-portability`
-capabilities. These are on the `t3/create-plugin-system` branch of
-`djgilcrease/t3code`; upstream T3 Code does not ship this host yet. Plugins are
+capabilities. These are on the
+[`t3/create-plugin-system`](https://github.com/djgilcrease/t3code/tree/t3/create-plugin-system)
+branch of `djgilcrease/t3code`, first at
+[`8844a8a483`](https://github.com/djgilcrease/t3code/tree/8844a8a4839f76c4122b51f38612946c440f8d06);
+upstream T3 Code does not ship this host yet. Plugins are
 trusted extensions in supervised processes, not sandboxes.
 
 Install the tagged plugin with its repository URL in **Settings → Plugins**, on
@@ -25,6 +28,22 @@ Open the thread's details. Next to the machine name, choose **Move thread…**,
 pick the destination, and confirm. On mobile the button is in the thread's Git
 sheet, under the machine's name. When the move finishes, **Open thread** takes
 you to the copy.
+
+A thread on `system76-pc`, with the button beside the machine name:
+
+![A thread on system76-pc with a Move thread button beside the machine name](docs/images/1-thread-on-source.png)
+
+The confirmation names the destination and says what stays behind:
+
+![The Move thread dialog with Dj's MacBook Pro selected as the destination](docs/images/2-confirm.png)
+
+The result, with a button to open the copy:
+
+![The dialog reporting the thread moved to Dj's MacBook Pro](docs/images/3-moved.png)
+
+The same thread on the Mac, with its conversation, branch and uncommitted changes:
+
+![The moved thread open on Dj's MacBook Pro](docs/images/4-thread-on-destination.png)
 
 What happens:
 
