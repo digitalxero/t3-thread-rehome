@@ -1,0 +1,115 @@
+- semver: 0.1.0
+  date: 2026-11-09T21:49:05.614202635-08:00
+  packager: DigitalXero
+  changes:
+    - commit: 4a83fc40e618cc7314eb9037e9c343344da55e9f
+      note: |-
+        refactor(ui): remove the settings page so the plugin is one button (#3)
+
+        The settings page only served the headless pull: it created the source's
+        transfer key, saved named sources and listed recent moves. None of that is
+        needed to move a thread from its details. The page, its four commands, the
+        saved sources and the move journal are gone.
+
+        Pull stays for callers with no app in the middle. The source allows it only
+        when its server is started with T3_REHOME_TRANSFER_KEY, and the caller passes
+        the source as { url, key }.
+
+        Co-authored-by: Claude Fable 5.2 <noreply@anthropic.com>
+      author:
+        name: Dj Gilcrease
+        email: digitalxero@gmail.com
+      committer:
+        name: GitHub
+        email: noreply@github.com
+      conventional_commit:
+        category: refactor
+        scope: ui
+        description: remove the settings page so the plugin is one button (#3)
+        body: The settings page only served the headless
+        footer:
+            - |-
+              pull: it created the source's
+              transfer key, saved named sources and listed recent moves. None of that is
+              needed to move a thread from its details. The page, its four commands, the
+              saved sources and the move journal are gone.
+
+              Pull stays for callers with no app in the middle. The source allows it only
+              when its server is started with T3_REHOME_TRANSFER_KEY, and the caller passes
+              the source as { url, key }.
+            - 'Co-authored-by: Claude Fable 5.2 <noreply@anthropic.com>'
+        major: false
+        minor: false
+        patch: true
+    - commit: 8045337e7beb171c572cce8092bd8e3468d17140
+      note: |-
+        docs(sdk): say where the vendored SDK snapshot came from (#1)
+
+        The notice linked to a commit that is not on GitHub yet. It now names the
+        commit and branch, says so, and identifies the snapshot by checksum.
+
+        Co-authored-by: Claude Fable 5.2 <noreply@anthropic.com>
+      author:
+        name: Dj Gilcrease
+        email: digitalxero@gmail.com
+      committer:
+        name: GitHub
+        email: noreply@github.com
+      conventional_commit:
+        category: docs
+        scope: sdk
+        description: say where the vendored SDK snapshot came from (#1)
+        body: |-
+            The notice linked to a commit that is not on GitHub yet. It now names the
+            commit and branch, says so, and identifies the snapshot by checksum.
+        footer:
+            - 'Co-authored-by: Claude Fable 5.2 <noreply@anthropic.com>'
+        major: false
+        minor: false
+        patch: true
+    - commit: fff6434226902e2b55a8a903001047f033cf7728
+      note: |-
+        feat(move): move a thread to another machine with its conversation and work
+
+        Implements pingdotgg/t3code#31077 as a T3 Code plugin. A move is a copy and
+        then an archive: a running turn is stopped, the working tree is snapshotted,
+        and the snapshot plus every commit the destination lacks travel as a Git
+        bundle with the conversation. The destination creates the branch, a worktree
+        and the thread, and only then is the original archived, so a failed move
+        loses nothing.
+
+        Two transports share one engine. The button in a thread's details carries the
+        copy through the client in small steps, which works over any connection. The
+        pull command lets the destination fetch from the source's HTTP endpoint with a
+        transfer key, for agents, other plugins, and sources behind NAT.
+
+        Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+      author:
+        name: Dj Gilcrease
+        email: digitalxero@gmail.com
+      committer:
+        name: Dj Gilcrease
+        email: digitalxero@gmail.com
+      conventional_commit:
+        category: feat
+        scope: move
+        description: move a thread to another machine with its conversation and work
+        body: |-
+            Implements pingdotgg/t3code#31077 as a T3 Code plugin. A move is a copy and
+            then an
+        footer:
+            - |-
+              archive: a running turn is stopped, the working tree is snapshotted,
+              and the snapshot plus every commit the destination lacks travel as a Git
+              bundle with the conversation. The destination creates the branch, a worktree
+              and the thread, and only then is the original archived, so a failed move
+              loses nothing.
+
+              Two transports share one engine. The button in a thread's details carries the
+              copy through the client in small steps, which works over any connection. The
+              pull command lets the destination fetch from the source's HTTP endpoint with a
+              transfer key, for agents, other plugins, and sources behind NAT.
+            - 'Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>'
+        major: false
+        minor: true
+        patch: false
