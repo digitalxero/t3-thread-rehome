@@ -1,0 +1,26 @@
+{
+  "name": "@digitalxero/t3-thread-rehome",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "vp pack",
+    "test": "node --test test/*.test.ts",
+    "typecheck": "effect-tsgo tsrs --noEmit",
+    "verify": "node scripts/verify.mjs"
+  },
+  "dependencies": {
+    "@t3tools/plugin-sdk": "file:vendor/plugin-sdk",
+    "effect": "4.1.2"
+  },
+  "devDependencies": {
+    "@effect/tsgo": "0.67.1",
+    "@types/node": "24.12.4",
+    "vite-plus": "1.4.0"
+  },
+  "engines": {
+    "node": ">=24.10"
+  },
+  "packageManager": "pnpm@12.14.0"
+}
